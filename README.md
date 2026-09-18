@@ -5,3 +5,4 @@ testing, change management and Git workflows.
 
 Name: Juan Francisco Navarro Cruz
 Professor: Richard Aviles Lopez
+Edited directly from GitHub web interface.
