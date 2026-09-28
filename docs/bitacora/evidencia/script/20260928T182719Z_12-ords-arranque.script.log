@@ -1,0 +1,25 @@
+ORDS arrancado en segundo plano, sesion tmux: ords
+user.region=US
+user.timezone=UTC
+db.password=******
+conf.use.wallet=true
+
+2026-09-28T18:27:41.943Z WARNING     *** jdbc.MaxLimit in configuration |default
+|lo| is using a value of 10, this setting may not be sized adequately for a prod
+uction environment ***
+2026-09-28T18:27:43.109Z INFO        Created Pool: |default|lo|-2026-09-28T18-27
+-38.308012659Z at: 2026-09-28T18:27:38.308012659Z
+2026-09-28T18:27:44.083Z INFO
+
+Mapped local pools from /etc/ords/config/databases:
+  /ords/                              => default                        => VALID
+
+
+
+2026-09-28T18:27:44.113Z INFO        Oracle REST Data Services initialized
+Oracle REST Data Services version : 26.2.3.r2371104
+Oracle REST Data Services server info: jetty/12.0.37
+Oracle REST Data Services java info: OpenJDK 64-Bit Server VM  (build 21.0.12.1+
+1-1-24.04.4-Ubuntu mixed mode, sharing)
+
+
