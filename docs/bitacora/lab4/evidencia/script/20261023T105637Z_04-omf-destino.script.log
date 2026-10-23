@@ -1,0 +1,36 @@
+
+Session altered.
+
+1. Aplicar el destino OMF en FREEPDB1
+
+System altered.
+
+
+NAME		       VALUE
+---------------------- ------------------------------
+db_create_file_dest    /opt/oracle/oradata
+
+1 row selected.
+
+2. Prueba: CREATE TABLESPACE sin DATAFILE
+
+Tablespace created.
+
+
+TABLESPACE_NAME 	       FILE_NAME												    MB AUT	MAXMB
+------------------------------ ---------------------------------------------------------------------------------------------------- ---------- --- ----------
+TBSX			       /opt/oracle/oradata/FREE/55E54F210F100828E0630B00580ADFD0/datafile/o1_mf_tbsx_ofphc6jh_.dbf		   100 YES   33554432
+
+1 row selected.
+
+3. Limpieza: borrar la prueba con su archivo
+
+Tablespace dropped.
+
+
+TBSX_RESTANTES
+--------------
+	     0
+
+1 row selected.
+
