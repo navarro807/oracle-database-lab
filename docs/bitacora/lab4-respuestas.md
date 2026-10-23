@@ -167,3 +167,214 @@ Respuesta: B. El área de trabajo no cupo en la PGA y Oracle tuvo que releer sei
 **P-G1. Una aplicación ejecuta miles de veces por minuto la misma consulta cambiando solo un literal en el WHERE. V$SQL muestra miles de cursores casi idénticos y la CPU de análisis es alta. Qué solución definitiva recomiendo**
 
 Respuesta: B. Modificar la aplicación para usar variables de enlace. Mi experimento lo confirma: las consultas con literales produjeron 1008 análisis duros y 5630 ms de CPU de análisis, mientras que la sentencia con `:id` produjo un solo análisis duro, 1000 ejecuciones y 30 ms de tiempo total. Los literales generan cursores distintos y consumen CPU y shared pool; la variable de enlace conserva el mismo texto de sentencia y permite reutilizar el cursor. Aumentar `SHARED_POOL_SIZE` solo conservaría más cursores duplicados, `ALTER SYSTEM FLUSH SHARED_POOL` empeoraría temporalmente el problema y `CURSOR_SHARING = FORCE` puede ser una contingencia, pero no sustituye la corrección de la aplicación.
+
+## Parte H - Procesos de background y procesos servidor
+
+**15. Cómo se relacionan los procesos Oracle con los procesos Linux**
+
+En `09-procesos.script.log`, Oracle muestra 88 procesos de background y 4 procesos servidor, mientras Linux muestra 55 procesos de background y 4 procesos servidor. La diferencia entre procesos Oracle y Linux se debe a que Oracle puede representar varios procesos internos como hilos dentro de un mismo proceso Linux. La sesión `C##OPS_RO` aparece con SID 62, SERIAL# 6591 y SPID 4937, atendida por un proceso servidor dedicado.
+
+En `09-procesos-so.script.log`, los SPID de Oracle coinciden con los PID internos leídos desde `/proc` dentro del contenedor: PMON 2488, DBW0 2534, LGWR 2536, CKPT 2538, SMON 2540, RECO 2548, LREG 2550, MMON 2563 y MMNL 2565. El proceso LGWR, cuyo SPID es 2536, aparece como `db_lgwr_FREE` con 93 MB de RSS. También se detectan 58 procesos `db_*_FREE` y un listener `tnslsnr`. La RSS no debe sumarse sin más: los procesos comparten buena parte de la SGA.
+
+Mi instancia tiene cuatro procesos ARCn (`ARC0` a `ARC3`), porque está en ARCHIVELOG; la salida ilustrativa del PDF estaba en NOARCHIVELOG y mostraba cero. El listener aparece porque la sesión de `C##OPS_RO` llegó por red, mientras que el script no encontró en ese momento un proceso servidor local `oracleFREE`.
+
+**P-H1. Qué proceso debe completar su escritura cuando un usuario ejecuta COMMIT**
+
+La respuesta es LGWR. El commit espera a que LGWR escriba el redo del cambio en los online redo logs; DBWn puede escribir los bloques de datos más tarde. CKPT solo actualiza información de checkpoint, ARCn archiva redo y SMON hace recuperación de instancia.
+
+**P-H2. Qué dos procesos de background son obligatorios en cualquier instancia**
+
+La respuesta es PMON y SMON. PMON limpia procesos de usuario caídos, deshace sus transacciones y libera bloqueos; SMON realiza la recuperación de instancia y otras tareas de mantenimiento. ARCn solo aparece en ARCHIVELOG, RECO depende de transacciones distribuidas y CJQ0 depende del job queue.
+
+**Reto H. La sesión que más consume**
+
+El diagnóstico de H.1 relaciona una sesión con su proceso servidor usando `V$SESSION.PADDR = V$PROCESS.ADDR`: la sesión de `C##OPS_RO` es SID 62, SERIAL# 6591 y SPID 4937. El mismo patrón permite localizar la PGA de una sesión real durante una consulta: se obtiene el SID y SPID desde `V$SESSION` y se cruza con `V$PROCESS.PGA_USED_MEM` y `V$PROCESS.PGA_ALLOC_MEM`. La evidencia de esta ejecución no incluye una carga concurrente adicional, por eso H.2 indica que no encontró otro proceso servidor dedicado.
+
+## Parte I - Contenedores y visibilidad
+
+### 16. ¿Por qué SYS ve 16 datafiles desde la raíz y 9 desde FREEPDB1?
+
+Desde la raíz, `SYS` puede consultar la información de toda la CDB y observa los datafiles de `CDB$ROOT`, `PDB$SEED` y `FREEPDB1`, por eso aparecen 16 datafiles. Desde `FREEPDB1`, las vistas locales muestran únicamente los archivos pertenecientes a esa PDB, por eso aparecen 9.
+
+La diferencia no significa que hayan desaparecido archivos: refleja el alcance del contenedor desde el que se consulta. Las vistas `CDB_*` permiten observar información global desde la raíz, mientras que las vistas `DBA_*` consultadas desde una PDB se limitan normalmente a esa PDB.
+
+### 17. ¿Por qué LAB4_ANALISTA recibe ORA-00942 y no privilegios insuficientes al consultar DBA_TABLES?
+
+`ORA-00942` es la respuesta que Oracle muestra cuando la sesión no puede resolver una tabla o vista porque no existe en su ámbito visible o porque no tiene privilegios para verla. En la evidencia `20261023T122401Z_10-que-ve-cada-usuario.script.log`, `LAB4_ANALISTA` recibe `ORA-00942` al consultar `SYS.DBA_TABLES`.
+
+Oracle no revela al usuario de bajo privilegio si el objeto existe pero está fuera de su visibilidad. Por eso el mensaje no tiene que ser necesariamente `ORA-01031`; ambos errores pueden aparecer en operaciones distintas según el privilegio que falte.
+
+### 18. ¿Qué ve COPSRO en la PDB y qué no puede ver desde la raíz?
+
+`C##OPS_RO` puede conectarse a la PDB y consultar aquello para lo que recibió privilegios explícitos, como la vista del alert log concedida en la Parte J. No puede leer automáticamente todas las vistas `DBA_*`, las sesiones ni las tablas de negocio de los esquemas de aplicación.
+
+Desde la raíz tampoco puede cambiar de contenedor si no tiene `SET CONTAINER`. La evidencia muestra `ORA-01031` al intentar saltar a la raíz, lo que confirma que ser un usuario común no equivale a tener todos los privilegios administrativos.
+
+### 19. ¿Por qué un usuario común no ve automáticamente todos los objetos de la CDB?
+
+Un usuario común existe en varios contenedores, pero sus privilegios pueden tener un alcance concreto mediante `CONTAINER=CURRENT` o `CONTAINER=ALL`. Además, las vistas consultadas aplican filtros de visibilidad según el contenedor actual y los privilegios efectivos.
+
+Por ello `C##OPS_RO` puede ser común y, aun así, no tener acceso a `DBA_TABLES`, `V_$SESSION` o las tablas de `ADMIN_ACADEMIA`. La cuenta común identifica al usuario en la CDB, pero no sustituye al modelo de autorización.
+
+### 20. ¿Qué ocurre al crear usuarios comunes y locales?
+
+En la raíz, un usuario común debe respetar el prefijo definido por `COMMON_USER_PREFIX`, que en esta instalación es `C##`. Crear un usuario común sin el prefijo produce `ORA-65096`.
+
+Desde una PDB se crean usuarios locales. Intentar crear allí un usuario con el nombre reservado para una cuenta común produce `ORA-65094`. La evidencia corresponde a `20261023T122400Z_10-ciclo-vida-pdb.script.log`.
+
+### Ciclo de vida de una PDB
+
+Una PDB abierta no puede eliminarse directamente. La primera tentativa produce `ORA-65025`, porque `PDB_LAB4` sigue abierta.
+
+La secuencia correcta es cerrar la PDB, ejecutar `DROP PLUGGABLE DATABASE PDB_LAB4 INCLUDING DATAFILES` y verificar que no quedan la PDB ni los usuarios de prueba. La comprobación final confirma que la PDB y los usuarios temporales fueron eliminados.
+
+## Parte J - Archivos de la base de datos
+
+### 21. ¿Qué privilegio exacto necesita COPSRO para leer el alert log?
+
+El privilegio exacto es:
+
+```sql
+GRANT SELECT ON SYS.V_$DIAG_ALERT_EXT
+TO C##OPS_RO
+CONTAINER=ALL;
+```
+
+Debe concederse sobre `V_$DIAG_ALERT_EXT`, no sobre un sinónimo genérico, y únicamente para lectura. Con ello COPSRO puede consultar el alert log sin recibir el rol `DBA` ni privilegios de escritura.
+
+### 22. ¿Qué archivos forman físicamente la base de datos?
+
+Los datafiles contienen los tablespaces permanentes y los segmentos de las tablas. Los tempfiles contienen espacio temporal; los redo logs registran cambios; y los control files guardan la estructura física de la base y la información de recuperación.
+
+El SPFILE contiene parámetros persistentes de la instancia y el password file permite autenticación administrativa remota. El alert log y el ADR son archivos de diagnóstico, no archivos de datos.
+
+### 23. ¿Qué riesgo tiene que los control files estén en el mismo almacenamiento?
+
+Dos control files solo proporcionan redundancia real si están en ubicaciones físicas independientes. Si ambos residen en el mismo disco o volumen y este falla, se pierden simultáneamente.
+
+La acción correcta es multiplexarlos en dispositivos o volúmenes separados y comprobar periódicamente que las copias contienen la misma información.
+
+### 24. ¿Qué riesgo tiene dejar el ADR fuera del volumen persistente?
+
+Si el ADR queda dentro de la capa efímera del contenedor, al recrearlo pueden perderse el alert log, las trazas y el historial de errores aunque los datafiles sobrevivan.
+
+La solución es conservar el ADR en almacenamiento persistente o exportar sus registros a un sistema centralizado de logs. Así se mantienen las evidencias necesarias para investigar incidentes.
+
+## Parte K - Bloques y filas
+
+### 25. ¿Cómo se descompone el ROWID de la fila 101?
+
+El ROWID de la fila 101 identifica el objeto, el archivo relativo, el bloque y la ranura de la fila. En la evidencia, la fila se encuentra en el objeto `ADMIN_ACADEMIA.ACA_ESTUDIANTES`, archivo relativo 25, bloque 782 y ranura 5.
+
+La comprobación se hace comparando `DBMS_ROWID.ROWID_BLOCK_NUMBER` con el bloque 782 del volcado `12-volcado-bloque.trc.txt`. Así se relaciona la fila lógica con su ubicación física.
+
+### 26. ¿Qué significan nrow, fsbo, fseo y avsp?
+
+En el bloque 782:
+
+- `nrow` indica el número de filas del bloque.
+- `fsbo` marca el comienzo del espacio libre.
+- `fseo` marca el final del espacio libre.
+- `avsp` representa el espacio libre disponible.
+
+La evidencia confirma la relación `avsp = fseo - fsbo`, concretamente `1063 - 198 = 865`.
+
+### 27. ¿Qué muestra la ITL sobre las filas del bloque?
+
+La ITL contiene información de las transacciones que han modificado filas del bloque. La entrada con `Lck 90` indica que 90 filas quedaron asociadas a esa transacción; el estado confirmado indica que la transacción ya terminó.
+
+La limpieza diferida ocurre porque Oracle no limpia necesariamente todos los metadatos de transacción durante el commit. Una sesión posterior puede comprobar el undo y completar la limpieza cuando accede al bloque.
+
+### 28. ¿Cuánto ocupa la fila 101?
+
+El volcado muestra una fila de 78 bytes:
+
+- 3 bytes de cabecera.
+- 7 bytes de longitud, uno por columna.
+- 68 bytes de datos.
+
+La suma es `3 + 7 + 68 = 78 bytes`. El directorio de filas añade espacio adicional en el bloque, por lo que la ocupación total asociada es ligeramente superior.
+
+## Parte L - Capacidad y coste
+
+### 29. ¿Cuál es el factor de bloqueo teórico y cuál es el real?
+
+Con 20000 filas, un tamaño medio de 76 bytes, bloques de 8192 bytes y `PCTFREE=10`, la fórmula simplificada de la Unidad 3 produce:
+
+`bfr = floor((8192 - 96) * (1 - 0.10) / 76) = 95 filas por bloque`
+
+Por tanto:
+
+`b = ceil(20000 / 95) = 211 bloques`
+
+La aproximación que considera la cabecera real de Oracle da 216 bloques, mientras que la evidencia observa 244 bloques bajo la HWM. La diferencia se explica por cabeceras, ITL, directorio de filas, variación real del tamaño de las filas y bloques parcialmente ocupados.
+
+### 30. ¿Qué diferencia hay entre lecturas lógicas, aleatorias y secuenciales?
+
+La evidencia mide aproximadamente 3.28 microsegundos por lectura lógica, 107.7 microsegundos por lectura física aleatoria y un ancho de banda secuencial de unos 700 MB/s en este entorno.
+
+Las lecturas lógicas encuentran bloques en la buffer cache. Las físicas aleatorias acceden a bloques individuales, mientras que las secuenciales aprovechan operaciones multibloque y tienen un coste por bloque mucho menor.
+
+### 31. ¿Qué ocurre al aumentar PCTFREE?
+
+Aumentar `PCTFREE` reserva más espacio libre en cada bloque para que las filas puedan crecer sin migrar. La contrapartida es que caben menos filas por bloque y aumenta el número total de bloques de la tabla.
+
+La elección debe basarse en el patrón de actualización: una tabla estática puede usar menos `PCTFREE`, mientras que una tabla cuyas filas crecen necesita reservar más espacio.
+
+### 32. ¿Por qué las latencias del contenedor no representan necesariamente producción?
+
+Docker utiliza el almacenamiento del host y las cachés del sistema operativo, y el entorno puede estar virtualizado. Por eso las latencias medidas en el laboratorio pueden ser mucho menores que las de un HDD o SSD de producción.
+
+Las medidas sirven para comparar lecturas lógicas, aleatorias y secuenciales dentro del experimento, pero no deben convertirse directamente en una expectativa de rendimiento productivo.
+
+## Parte M - Filas migradas y encadenadas
+
+### 33. ¿Cuál es la diferencia entre una fila migrada y una encadenada?
+
+Una fila migrada cabía originalmente en un bloque y se mueve completa a otro cuando crece. En el bloque original queda un puntero hacia su nueva ubicación.
+
+Una fila encadenada no cabe completa en un único bloque desde el principio y se divide entre varios bloques. La migración se puede corregir reorganizando la tabla; el encadenamiento suele requerir revisar el diseño o utilizar bloques mayores.
+
+### 34. ¿Qué demuestra table fetch continued row?
+
+La evidencia registra 200 accesos `table fetch continued row` y 3200 lecturas lógicas en 1000 búsquedas, es decir, 3.2 lecturas lógicas por búsqueda.
+
+El contador demuestra que algunas filas requieren seguir un puntero desde el bloque original hasta otro bloque. Es el coste adicional de las filas migradas.
+
+### 35. ¿Por qué ALTER TABLE MOVE deja índices UNUSABLE?
+
+`ALTER TABLE ... MOVE` puede cambiar los ROWID de las filas. Los índices que conservan los ROWID antiguos dejan de ser válidos y Oracle los marca `UNUSABLE`.
+
+Después del `MOVE` hay que reconstruirlos con `ALTER INDEX ... REBUILD` o utilizar una estrategia online compatible con la edición y la disponibilidad requerida.
+
+## Parte N - Autopsia de la instancia
+
+### 36. ¿Qué tres hallazgos principales aparecen en la autopsia?
+
+#### ORA-00800
+
+El alert log registra `ORA-00800` para VKTM y LGWR al intentar ajustar prioridades de procesos. La base continúa funcionando, pero conviene revisar las capacidades y límites del contenedor. Prioridad: media.
+
+#### ORA-65025
+
+La prueba de ciclo de vida muestra `ORA-65025` al intentar eliminar una PDB abierta. La acción correcta es cerrar primero la PDB en todas las instancias. Prioridad: baja en laboratorio y media en automatización.
+
+#### ORA-959
+
+La autopsia registra un `ORA-959`, que indica un conflicto con un objeto o recurso que ya existe. Debe identificarse el objeto exacto y hacer que el script sea idempotente o que la migración compruebe previamente su existencia. Prioridad: media.
+
+La evidencia final `16-verificacion-final.script.log` termina con `RESULTADO TODO OK`, por lo que no quedan recursos de prueba ni fallos de aceptación.
+
+## Parte O - Entrega profesional
+
+### 37. ¿Por qué COPSRO y no SYSTEM para observar? ¿Qué no puede hacer COPSRO?
+
+COPSRO aplica el principio de mínimo privilegio: recibe únicamente permisos de lectura necesarios para observar la base. `SYSTEM` tiene privilegios administrativos mucho más amplios y una consulta o error de sesión podría modificar objetos, usuarios o datos.
+
+COPSRO no puede conceder privilegios, crear usuarios, modificar parámetros, escribir en tablas de negocio ni ejecutar privilegios `ANY` de escritura. La verificación final confirma que puede leer el alert log y que no tiene privilegios ANY de escritura.
+
+### 38. ¿Qué dos vías de exposición de contraseñas corrige este laboratorio respecto al Lab 3?
+
+La primera vía era dejar contraseñas literales de los propietarios de esquema en V000. V003 las invalida mediante `ALTER USER ... NO AUTHENTICATION`, convirtiendo esas cuentas en cuentas de solo esquema.
+
+La segunda vía era pasar la contraseña de SYS en la línea de comandos desde `08-aplicar-migraciones.sh`. Esa contraseña podía aparecer en `ps`, en el historial de la shell o en los eventos del demonio Docker. La versión corregida usa autenticación del sistema operativo con `as sysdba` y no pasa la contraseña como argumento.
