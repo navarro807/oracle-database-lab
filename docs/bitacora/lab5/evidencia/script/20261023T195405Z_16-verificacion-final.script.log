@@ -1,0 +1,35 @@
+== Partes I a L · SCN, control files, redo y ARCHIVELOG ==
+  [OK]    copias del control file (3)
+  [OK]    grupos de redo con un solo miembro (0)
+  [OK]    modo de la base (ARCHIVELOG)
+  [OK]    FRA configurada (definida)
+  [OK]    hay redo archivado (si)
+== Partes M a P · Undo, simulacros y salud ==
+  [OK]    fila 101 de vuelta a ACTIVO (ACTIVO)
+  [OK]    fila 102 de vuelta a ACTIVO (ACTIVO)
+  [OK]    matrículas restauradas (60000)
+  [OK]    fila 104 de vuelta a ACTIVO (ACTIVO)
+  [OK]    hay copias RMAN completadas (si)
+  [OK]    PDB de usuario (1)
+  [FALLO] CDB abierta: hay 'READWRITE', se esperaba 'READ WRITE' -> repasa Parte O
+== Evidencias ==
+  [OK]    evidencia 00
+  [OK]    evidencia 01
+  [OK]    evidencia 02
+  [OK]    evidencia 03
+  [OK]    evidencia 04
+  [OK]    evidencia 05
+  [OK]    evidencia 06
+  [OK]    evidencia 07
+  [OK]    evidencia 08
+  [OK]    evidencia 09
+  [OK]    evidencia 10
+  [OK]    evidencia 11
+  [OK]    evidencia 12
+  [OK]    evidencia 13
+  [OK]    evidencia 14
+  [OK]    evidencia 15
+  [OK]    config/.env fuera de Git
+  [OK]    backups/ fuera de Git
+
+RESULTADO: 1 FALLO(S). Corrige antes de abrir el PR.
