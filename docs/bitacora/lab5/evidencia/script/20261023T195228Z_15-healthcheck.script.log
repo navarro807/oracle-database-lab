@@ -1,0 +1,72 @@
+SQL Format Cleared
+
+== 1. Disponibilidad ==
+
+COMPROBACION                       VALOR                                   
+---------------------------------- ----------------------------------------
+Instancia                          OPEN desde 2026-10-23 19:45             
+Base de datos                      READ WRITE · ARCHIVELOG                 
+PDB FREEPDB1                       READ WRITE                              
+
+== 2. Espacio: tablespaces por encima del 80 % ==
+
+== 3. Recuperabilidad: FRA y último archivado ==
+
+COMPROBACION                       VALOR                                   
+---------------------------------- ----------------------------------------
+FRA usada                          85 de 4096 MB (2.1 %)                   
+Último redo archivado              2026-10-23 19:48                        
+Copias del control file            3                                       
+Grupos de redo con 1 solo miembro  0                                       
+
+== 4. Capacidad ==
+
+RESOURCE_NAME               AHORA     MAXIMO LIMITE    
+---------------------- ---------- ---------- ----------
+processes                      96        101        200
+sessions                      125        129        322
+transactions                    0          0  UNLIMITED
+
+== 5. Errores ORA- en el alert log en las últimas 24 h ==
+
+CUANDO      MENSAJE                                                                                   
+----------- ------------------------------------------------------------------------------------------
+10-23 19:48 ORA-01113: file 26 needs media recovery                                                   
+10-23 19:48 ORA-01113: file 26 needs media recovery                                                   
+10-23 19:48 ORA-01110: data file 16: '/opt/oracle/oradata/FREE/FREEPDB1/academia01.dbf'               
+10-23 19:48 ORA-63999: data file suffered media failure                                               
+10-23 19:45 ORA-00800: soft external error, arguments: [Set Priority Failed], [LGWR], [Check traces an
+10-23 19:45 ORA-00800: soft external error, arguments: [Set Priority Failed], [VKTM], [Check traces an
+10-23 19:38 ORA-00800: soft external error, arguments: [Set Priority Failed], [LGWR], [Check traces an
+10-23 19:38 ORA-00800: soft external error, arguments: [Set Priority Failed], [VKTM], [Check traces an
+10-23 19:29 ORA-00202: control file: '/opt/oracle/oradata/FREE/control03.ctl'                         
+10-23 19:29 ORA-205 signalled during: ALTER DATABASE   MOUNT...                                       
+
+== 6. Cambios de log por hora en las últimas 24 h ==
+
+HORA         CAMBIOS
+--------- ----------
+10-23 12h          1
+10-23 18h          4
+10-23 19h         13
+
+== 7. Copias de seguridad RMAN ==
+
+INICIO      INPUT_TYPE     STATUS             MB   SEGUNDOS
+----------- -------------- ---------- ---------- ----------
+10-23 19:47 DATAFILE FULL  COMPLETED          38         19
+
+== 8. Índices que piden atención ==
+
+OWNER            PROBLEMA                          INDICES EJEMPLO                 
+---------------- ------------------------------ ---------- ------------------------
+ADMIN_CLINICA    sin estadísticas                        8 IDX_CLI_CITAS_FECHA     
+ADMIN_FINTECH    sin estadísticas                        6 IDX_FIN_TX_DESTINO      
+ADMIN_LOGISTICA  sin estadísticas                        6 IDX_LOG_EVENTOS_ENVIO   
+ADMIN_RETAIL     sin estadísticas                        7 IDX_RET_DETALLE_PROD    
+
+== 9. Undo ==
+
+ ORA_01555 SIN_ESPACIO_UNDO CONSULTA_MAS_LARGA_S
+---------- ---------------- --------------------
+         0                0                  317
