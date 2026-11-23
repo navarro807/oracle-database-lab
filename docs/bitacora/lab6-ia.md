@@ -80,3 +80,24 @@ bash scripts/ops/sysdba.sh scripts/lab6/02-parametros.sql
   Intenta cambiar processes dentro de FREEPDB1 y da ORA-65040.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
   docs/bitacora/lab6/evidencia/script/02-parametros.script.log
+
+## Entrada 4
+- **Herramienta:** Perplexity (asistente de IA)
+- **Prompt (literal, copiado tal cual):**
+```text
+quiero que me hagas el trabajo entero y yo voy copiando y pegando todo lo que me digas
+```
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```sql
+bash scripts/lab6/02-estados-pdb.sh | tee $EVID_LAB6/script/02-estados-pdb.script.log
+```
+- **Dónde lo usé (parte, script o pregunta):** Parte C, apartado C.2.
+- **Propósito (para qué lo necesitaba):** Pasar FREEPDB1 por sus estados y comprobar el efecto de SAVE STATE tras un reinicio.
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):**
+  El script cierra FREEPDB1 y la abre en READ ONLY (se puede leer, escribir da ORA-16000).
+  Intenta abrirla en READ WRITE sin cerrar (ORA-65019) y usa FORCE para hacerlo en un solo paso.
+  La abre en RESTRICTED y comprueba que C##OPS_RO no entra (ORA-01035).
+  Hace DISCARD STATE y reinicia la instancia: FREEPDB1 queda MOUNTED y falla con ORA-01109.
+  Después la abre, hace SAVE STATE y reinicia otra vez: ahora vuelve sola a READ WRITE.
+- **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
+  docs/bitacora/lab6/evidencia/script/02-estados-pdb.script.log

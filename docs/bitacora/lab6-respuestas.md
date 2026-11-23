@@ -41,3 +41,18 @@ ni que sea de solo lectura.
 - ORA-65040: desde FREEPDB1 no se puede cambiar un parámetro que es del CDB (processes).
 - Las dos copias en texto: el PFILE desde SPFILE tiene 34 líneas y el PFILE desde MEMORY tiene 125 líneas.
   El SPFILE solo guarda lo que alguien fijó; la memoria tiene muchos más parámetros, casi todos con su valor por defecto.
+
+### C.2 Estados de FREEPDB1 y SAVE STATE (evidencia 02-estados-pdb)
+- READ ONLY: se puede consultar (20000 estudiantes) pero escribir da ORA-16000.
+  Sirve para auditorías o para congelar una PDB.
+- Abrir en READ WRITE una PDB ya abierta da ORA-65019. Hay que cerrarla antes
+  o usar OPEN READ WRITE FORCE, que la cierra y la abre en un solo paso (expulsa a las sesiones).
+- RESTRICTED: la PDB está abierta pero solo entra quien tiene RESTRICTED SESSION.
+  C##OPS_RO no lo tiene y recibe ORA-01035. Es el modo de mantenimiento sin usuarios dentro.
+- Reinicio SIN estado guardado (tras DISCARD STATE): la instancia dice "Database opened",
+  pero FREEPDB1 queda MOUNTED. Por el servicio freepdb1 da ORA-01109 (database not open).
+  Para la aplicación la base está caída aunque la instancia diga que está abierta.
+- Con ALTER PLUGGABLE DATABASE ... SAVE STATE guardé el estado OPEN. Tras otro reinicio,
+  FREEPDB1 volvió sola a READ WRITE: así "arriba" se comprueba por el camino del consumidor.
+- En el alert log aparecen ORA-65019 (provocado por mí a propósito) y ORA-00800 [Set Priority Failed] [LGWR],
+  que es un aviso del proceso LGWR al no poder subir su prioridad en Docker sobre WSL; no afecta a la base.
