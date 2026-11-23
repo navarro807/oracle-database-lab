@@ -35,3 +35,27 @@ bash scripts/ops/backup-estado.sh lab6-inicio
   backup-estado.sh para la base de forma limpia, copia el volumen y la vuelve a arrancar.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
   docs/bitacora/lab6/evidencia/script/00-backup-lab6-inicio.script.log
+
+## Entrada 2
+- **Herramienta:** Perplexity (asistente de IA)
+- **Prompt (literal, copiado tal cual):**
+```text
+recuerda que si hay que hacer en algun momento algun .md con cosas escritas
+o lo que sea tienes que hacerlo tu, osea absolutamente todo tienes que hacerlo tu
+y avisarme de cuando se hace y todo eso, yo solo copio y pego todo
+```
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```sql
+bash scripts/ops/ro.sh scripts/ops/turno.sql | tee $EVID_LAB6/script/01-turno.script.log
+bash scripts/ops/ro.sh scripts/lab6/01-automatizacion.sql freepdb1
+```
+- **Dónde lo usé (parte, script o pregunta):** Parte B, apartados B.1 y B.2.
+- **Propósito (para qué lo necesitaba):** Ejecutar la lista de turno y revisar el mantenimiento automático de Oracle, y redactar mis respuestas de la Parte B.
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):**
+  ro.sh entra con la cuenta de solo lectura C##OPS_RO y ejecuta el script SQL que le paso.
+  turno.sql hace las 7 preguntas de turno: dónde estoy, estado de instancia y base, PDB abiertas,
+  errores ORA- de 24 h, tablespaces por encima del 85 %, sesiones bloqueadas y alertas pendientes.
+  01-automatizacion.sql entra por freepdb1 y muestra AutoTask, ventanas, umbrales MMON, AWR y Scheduler.
+  tee guarda en un archivo lo mismo que se ve en pantalla, como evidencia.
+- **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
+  docs/bitacora/lab6/evidencia/script/01-turno.script.log
