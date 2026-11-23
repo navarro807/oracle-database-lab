@@ -24,3 +24,20 @@
 Respuesta: B. NONE significa que MMON no generará alertas de espacio para ese tablespace
 hasta que se fije un umbral. No significa que esté vacío, ni que use el 85 % de la raíz,
 ni que sea de solo lectura.
+
+## Parte C · Parámetros, estados de la PDB y arranque
+
+### C.1 Parámetros y SCOPE (evidencia 02-parametros)
+- La instancia arrancó con un SPFILE binario (spfileFREE.ora), no con un PFILE de texto.
+- Antes de tocar nada creé dos copias en texto: una FROM SPFILE (lo que alguien fijó)
+  y otra FROM MEMORY (todo lo que está en uso, también lo que calcula Oracle).
+- db_files es estático (ISSYS_MODIFIABLE = FALSE): con SCOPE=MEMORY da ORA-02095.
+  Oracle protege la instancia en marcha.
+- Con SCOPE=SPFILE se acepta: el archivo dice 250 pero la memoria sigue en 200.
+  El cambio solo se aplica en el próximo arranque, y queda una diferencia pendiente.
+- RESET quitó la línea del SPFILE y db_files volvió a estar sin fijar.
+  Valía como vuelta atrás solo porque db_files NO estaba fijado antes (lo demuestra la copia del paso 2).
+  Si ya estuviera fijado (por ejemplo processes), RESET lo cambiaría al valor por defecto.
+- ORA-65040: desde FREEPDB1 no se puede cambiar un parámetro que es del CDB (processes).
+- Las dos copias en texto: el PFILE desde SPFILE tiene 34 líneas y el PFILE desde MEMORY tiene 125 líneas.
+  El SPFILE solo guarda lo que alguien fijó; la memoria tiene muchos más parámetros, casi todos con su valor por defecto.

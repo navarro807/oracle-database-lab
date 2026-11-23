@@ -59,3 +59,24 @@ bash scripts/ops/ro.sh scripts/lab6/01-automatizacion.sql freepdb1
   tee guarda en un archivo lo mismo que se ve en pantalla, como evidencia.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
   docs/bitacora/lab6/evidencia/script/01-turno.script.log
+
+## Entrada 3
+- **Herramienta:** Perplexity (asistente de IA)
+- **Prompt (literal, copiado tal cual):**
+```text
+estas usando todo lo que pide el pdf del profesor y la carpeta que nos ha adjuntado
+```
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```sql
+bash scripts/lab6/02-pfile-so.sh preparar
+bash scripts/ops/sysdba.sh scripts/lab6/02-parametros.sql
+```
+- **Dónde lo usé (parte, script o pregunta):** Parte C, apartado C.1.
+- **Propósito (para qué lo necesitaba):** Entender de dónde sale la instancia y dónde queda un cambio de parámetro (memoria, archivo o ambos).
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):**
+  02-pfile-so.sh crea en el volumen la carpeta para las copias de seguridad de los parámetros.
+  02-parametros.sql, como SYSDBA, crea dos PFILE en texto (desde SPFILE y desde MEMORY).
+  Prueba db_files (estático): MEMORY da ORA-02095; SPFILE se acepta pero solo vale al reiniciar; RESET lo deshace.
+  Intenta cambiar processes dentro de FREEPDB1 y da ORA-65040.
+- **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
+  docs/bitacora/lab6/evidencia/script/02-parametros.script.log
