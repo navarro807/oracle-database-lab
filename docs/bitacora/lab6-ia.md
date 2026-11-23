@@ -237,3 +237,28 @@ bash scripts/lab6/07-adr-trazas.sh
   07-adr-trazas.sh enseña el ADR y activa con DBMS_MONITOR la traza de la sesión de APP_ACADEMIA para ver sus lecturas con tkprof.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
   docs/bitacora/lab6/evidencia/script/07-adr-trazas.script.log
+
+## Entrada 11
+- **Herramienta:** Perplexity (asistente de IA)
+- **Prompt (literal, copiado tal cual):**
+```text
+pero tengo que hacer algo con esto? o empiezo poniendo directamente el codigo del incidente 1, ten en cuenta que no tengo ni idea de nada tienes que guiarme paso a paso todo como hasta ahora pero yo no se hacer nada por mi cuenta
+```
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```sql
+bash scripts/lab6/08-guardia.sh incidente 1
+bash scripts/ops/ro.sh scripts/lab6/08-diagnostico.sql
+ALTER SYSTEM KILL SESSION '63,64045' IMMEDIATE;
+BEGIN DBMS_SERVICE.START_SERVICE('academia_app'); END;
+ALTER PLUGGABLE DATABASE FREEPDB1 SAVE STATE;
+ALTER USER app_academia ACCOUNT UNLOCK;
+```
+- **Dónde lo usé (parte, script o pregunta):** Parte I, incidentes INC-601, INC-602 e INC-603 y los tres postmortems de docs/bitacora/lab6-guardia.md, cuyo borrador redactó la IA.
+- **Propósito (para qué lo necesitaba):** Resolver la guardia con el método de la unidad (observar, decidir, actuar, validar y registrar) y documentar cada incidente.
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):**
+  08-guardia.sh abre un incidente y solo enseña el ticket; no abrí el script antes de resolverlos. 08-diagnostico.sql lee con la cuenta de solo lectura quién espera, qué fila, qué bloqueos hay,
+  cuánto trabajo se desharía, los servicios arrancados y las cuentas no abiertas.
+  KILL SESSION termina solo la sesión que bloquea (INC-601). START_SERVICE arranca el servicio parado y SAVE STATE guarda el estado para que sobreviva a un reinicio (INC-602).
+  ACCOUNT UNLOCK desbloquea la cuenta de la aplicación (INC-603), que no se bloqueó por intentos fallidos sino de forma manual.
+- **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
+  docs/bitacora/lab6/evidencia/script/08-intervencion-inc3.script.log
