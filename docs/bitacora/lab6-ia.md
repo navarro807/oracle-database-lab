@@ -213,3 +213,27 @@ bash scripts/lab6/06-cascada.sh
   06-cascada.sh crea dos usuarios temporales para ver que revocar ADMIN OPTION no se propaga y revocar GRANT OPTION sí.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
   docs/bitacora/lab6/evidencia/script/06-probar-acceso.script.log
+
+## Entrada 10
+- **Herramienta:** Perplexity (asistente de IA)
+- **Prompt (literal, copiado tal cual):**
+```text
+quiero que me hagas el trabajo entero y yo voy copiando y pegando todo lo que me digas
+```
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```sql
+bash scripts/ops/sysdba.sh scripts/lab6/07-objetos.sql
+bash scripts/ops/ro.sh scripts/lab6/07-memoria.sql
+bash scripts/ops/ro.sh scripts/lab6/07-archivos-criticos.sql
+bash scripts/lab6/07-adr-trazas.sh
+```
+- **Dónde lo usé (parte, script o pregunta):** Parte H, apartados H.1 a H.4 y pregunta H1. La IA redactó también el borrador de las respuestas de la Parte H.
+- **Propósito (para qué lo necesitaba):** Vigilar objetos inválidos e índices UNUSABLE, leer la memoria y sus advisors, inventariar los archivos críticos y trazar la sesión de otro usuario.
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):**
+  07-objetos.sql crea una copia de la tabla con dos vistas y una función, cambia columnas y mira qué objetos pasan a INVALID,
+  los recompila con UTL_RECOMP, deja un índice UNUSABLE con un MOVE, lo reconstruye con REBUILD ONLINE y vacía la papelera.
+  07-memoria.sql lee V$SGAINFO, V$PGASTAT y los advisors de SGA y PGA para decidir si cambiar la memoria.
+  07-archivos-criticos.sql lista control files, redo, SPFILE, password file, FRA y copias RMAN.
+  07-adr-trazas.sh enseña el ADR y activa con DBMS_MONITOR la traza de la sesión de APP_ACADEMIA para ver sus lecturas con tkprof.
+- **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
+  docs/bitacora/lab6/evidencia/script/07-adr-trazas.script.log

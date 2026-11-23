@@ -243,3 +243,56 @@ ni que sea de solo lectura.
   mientras que el de objeto con GRANT OPTION sí (SELECT ON hr.emp desaparece de B).
 - G2. Respuesta: B. SELECT ANY TABLE ON SCHEMA ventas permite leer todas las tablas actuales y futuras del esquema VENTAS,
   y solo de ese esquema.
+
+## Parte H · Objetos, memoria, archivos críticos y ADR
+
+### H.1 Validez, dependencias, UNUSABLE y papelera (evidencia 07-objetos)
+- Trabajé sobre una copia (ACA_EST_LAB6) con dos vistas y una función que dependen de ella; nunca sobre la tabla de negocio.
+- Columna nueva que nadie usa (telefono): no se invalidó nada. Oracle registra dependencias de grano fino por columna, no solo por tabla.
+- Ampliar email_institucional: solo V_CONTACTO_LAB6 pasó a INVALID, porque es la única que usa esa columna.
+- Ampliar nombres: V_ACTIVOS_LAB6 pasó a INVALID y la función F_TOTAL_ACTIVOS_LAB6 también, en cascada.
+  DBA_DEPENDENCIES explica la cadena: la función depende de V_ACTIVOS_LAB6, y la vista depende de la tabla.
+- Cuando un usuario llamó a la función (17600 activos), Oracle la recompiló sola y también a V_ACTIVOS_LAB6; funciona,
+  pero lo paga ese usuario en su llamada, quizá en hora punta. V_CONTACTO_LAB6, que nadie había usado, siguió INVALID.
+- UTL_RECOMP.RECOMP_SERIAL('ADMIN_ACADEMIA') la dejó VALID: el DBA recompila antes de abrir el servicio.
+- ALTER TABLE ... MOVE cambia los ROWID y dejó el índice IX_EST_LAB6_ESTADO UNUSABLE sin dar error: las consultas dejan
+  de usarlo en silencio. ALTER INDEX ... REBUILD ONLINE lo devolvió a VALID.
+- Papelera: DROP sin PURGE no libera espacio (el índice 0.5 MB y la tabla 2 MB quedaron en DBA_RECYCLEBIN);
+  PURGE TABLE la dejó en 0. Validación final: 0 objetos inválidos en los esquemas de negocio.
+
+### H.2 La memoria y sus advisors (evidencia spool 07-memoria)
+- SGA: máximo 1529 MB, buffer cache 896 MB, shared pool 592 MB, Shared IO Pool 80 MB y large pool 16 MB.
+  Con ASMM, 0 movimientos entre componentes desde el arranque: no ha movido memoria.
+- PGA: objetivo agregado 512 MB, 356 MB en uso y 437 MB asignados; over allocation count 0 y cache hit 100 %.
+  Los procesos que más PGA usan en mi salida son M002 (32.3 MB), M007 (25.7 MB) y M006 (25 MB), junto a los ARCn.
+- Advisor de SGA: duplicar la SGA (factor 2, 3072 MB) deja el DB time estimado en 1 (sin mejora) y las lecturas
+  físicas en 34957 igual que ahora; reducirla a la mitad (768 MB) subiría el DB time estimado a 1.2151 y las lecturas físicas a 49097.
+  Conclusión: duplicar la SGA no ahorraría ni un segundo de DB time.
+- Advisor de PGA: con 128 y 256 MB habría sobreasignaciones (OVERALLOC 7, acierto del 69 %); con 384 MB ya no (0, 100 %).
+  Es decir, por debajo de unos 384 MB la PGA tendría sobreasignaciones; la actual (512 MB) está bien.
+- No se cambia la memoria por intuición: se pregunta al advisor antes.
+
+### H.3 Inventario de archivos críticos (evidencia 07-archivos-criticos)
+- Control files: tres copias (control01.ctl, control02.ctl y control03.ctl en /opt/oracle/oradata/FREE).
+- Redo en línea: 3 grupos de 200 MB con 2 miembros cada uno (redo0Xb.log como segunda copia); el grupo 2 es el CURRENT
+  y los grupos 1 y 3 están INACTIVE y archivados.
+- SPFILE y password file viven en dbs/, que es un enlace simbólico al volumen (/opt/oracle/oradata/dbconfig/FREE/dbs):
+  por eso sobreviven a recrear el contenedor.
+- FRA: 453 MB usados de 4096 MB. La base está en ARCHIVELOG con 25 redo archivados en disco.
+- Copia RMAN: la última pieza es de 2026-11-23 10:56 y hay 10 piezas; una base sin copia reciente es una alarma aunque todo funcione.
+- Solo SYS puede conectarse con SYSDBA y SYSOPER por el password file.
+
+### H.4 El ADR y la traza de la sesión de otro usuario (evidencia 07-adr-trazas)
+- El ADR cuelga de /opt/oracle (ADR Base) y su home es /opt/oracle/diag/rdbms/free/FREE. El alert log existe dos veces:
+  en texto (trace/alert_FREE.log) y en XML (alert/log.xml), que es el que lee V$DIAG_ALERT_EXT. Hay 642 trazas en trace/.
+- Un problema agrupa los incidentes del mismo error crítico: el problema 1 es ORA 800 (Set Priority Failed) con 38 incidentes,
+  el ruido conocido de los contenedores Linux. ADRCI está disponible en mi imagen y lista los mismos datos.
+- Con DBMS_MONITOR.SESSION_TRACE_ENABLE traza la sesión 62,23683 de APP_ACADEMIA sin pedirle nada y sin reiniciar;
+  tracefile_identifier puso lab6_app en el nombre del archivo (FREE_ora_3746_lab6_app.trc).
+- En la traza en bruto aparecen PARSING (la sentencia), EXEC, FETCH y WAIT (evento 'PL/SQL lock timer').
+  La consulta de la aplicación (SELECT COUNT(*) ... estado = 'ACTIVO') necesitó 247 lecturas lógicas: lo dice la línea
+  FETCH con cr=247, y tkprof lo confirma con query = 247 para devolver 1 fila.
+
+### Pregunta tipo examen H1
+- Respuesta: B. Tras un ALTER TABLE ... MOVE los índices quedan UNUSABLE sin dar error, y el optimizador los ignora:
+  por eso las consultas por cliente van lentas. La tabla no queda INVALID y no se pierden estadísticas.
