@@ -1,0 +1,53 @@
+== EVIDENCIA alumno=E048 hora=2026-11-23T11:09:10Z origen=08-intervencion-inc3
+== EVIDENCIA contenedor=b5d714c0e880 dbid=1509902213 arranque=2026-11-23T10:41:08 scn=8491726
+
+Session altered.
+
+-- Intervención: desbloquear solo la cuenta de la aplicación
+
+User altered.
+
+
+USERNAME
+--------------------------------------------------------------------------------------------------------------------------------
+ACCOUNT_STATUS
+--------------------------------
+PROFILE
+--------------------------------------------------------------------------------------------------------------------------------
+APP_ACADEMIA
+OPEN
+DEFAULT
+
+
+1 row selected.
+
+-- Validación: la aplicación entra por su servicio y trabaja
+
+ROLE
+--------------------
+ROL_APP_ACADEMIA
+
+1 row selected. 
+
+
+ESTUDIANTES
+-----------
+      17600
+
+1 row selected. 
+
+
+1 row updated.
+
+
+Rollback complete.
+
+-- Ya no puede insertar en el histórico (el permiso temporal de la Parte F se retiró): error esperado
+
+Error starting at line : 12 File @ file:/home/navarro/oracle-database-lab/scripts/lab6/06-app-sigue.sql
+In command -
+INSERT INTO carga_hist.registro (id, relleno) VALUES (-1, 'x')
+Error at Command Line : 12 Column : 24 File @ file:/home/navarro/oracle-database-lab/scripts/lab6/06-app-sigue.sql
+Error report -
+SQL Error: ORA-00942: table or view "CARGA_HIST"."REGISTRO" does not exist
+Help: https://docs.oracle.com/error-help/db/ora-00942/
