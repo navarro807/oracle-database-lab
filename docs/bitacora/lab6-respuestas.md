@@ -155,3 +155,49 @@ ni que sea de solo lectura.
 - Respuesta: B (solo los usuarios de FREEPDB1). Conectado por el servicio freepdb1, CDB_USERS solo enseña
   el contenedor actual (CON_ID 3: 47 usuarios en mi salida). La vista existe también dentro de la PDB;
   los otros contenedores solo se ven desde la raíz con CONTAINER_DATA.
+
+## Parte F · Espacio, cuotas, reanudable y HWM
+
+### F.1 Tablespace con techo, tres medidas y cuotas (evidencia 05-almacenamiento)
+- Creé TBS_ACADEMIA_HIST con ruta explícita, 10 MB iniciales, AUTOEXTEND NEXT 5M y MAXSIZE 40M (con techo).
+  En 26ai es bigfile por defecto, con gestión local de extensiones y segmentos AUTO (ASSM).
+- Las tres medidas de TBS_ACADEMIA_HIST antes de la carga: asignado 10 MB, libre 3.9 MB y máximo alcanzable 40 MB.
+  Para TBS_ACADEMIA: asignado 100 MB, libre 76.8 MB y máximo 1024 MB. No son lo mismo: asignado es lo que ocupan
+  los datafiles hoy, libre es lo libre dentro de lo asignado y máximo es hasta donde puede crecer con AUTOEXTEND.
+- DBA_TABLESPACE_USAGE_METRICS mide contra el máximo: TBS_ACADEMIA_HIST estaba al 15.16 % y TBS_ACADEMIA al 2.27 %.
+  Es la cifra que sirve para alertar y la que usa la lista de turno.
+- Los tablespaces no crecen solos, crecen sus segmentos: en TBS_ACADEMIA los que más ocupan son ACA_MATRICULAS
+  y su índice UQ_ACA_MATRICULA_UNICA (3 MB cada uno).
+- CARGA_HIST es un esquema sin contraseña (NO AUTHENTICATION), sin cuota en su tablespace por defecto.
+  La tabla REGISTRO existe pero tiene 0 segmentos (creación diferida): no ocupa nada hasta la primera fila.
+- ORA-01950: SYS (que inserta) provoca la creación del segmento, pero el segmento sería de CARGA_HIST,
+  que no tiene cuota. Insertó SYS y pagó (le faltaba la cuota) CARGA_HIST: la cuota la paga el dueño del segmento.
+- ORA-01536: con QUOTA 2M, 5000 filas de 1 KB no caben. Ampliar el tablespace no lo habría resuelto: el tablespace
+  tenía sitio de sobra; lo que faltaba era permiso (cuota) para usarlo.
+- ORA-30041: no se puede dar cuota sobre un tablespace temporal (ni de undo).
+- El umbral de TBS_ACADEMIA_HIST pasó de NONE a aviso 80 % y crítico 95 % con DBMS_SERVER_ALERT.SET_THRESHOLD,
+  para que MMON avise antes de que la carga falle.
+- Tres errores, tres remedios: ORA-01950/ORA-01536 falta cuota (ampliar la cuota del dueño) y
+  ORA-01653/ORA-01654 falta espacio en el tablespace (ampliar el datafile, subir MAXSIZE o añadir otro).
+
+### F.2 Asignación reanudable (evidencia 05-resumable)
+- Con la cuota de partida de 2 MB lancé la carga de APP_ACADEMIA con ALTER SESSION ENABLE RESUMABLE TIMEOUT 180.
+  La sentencia no falló: quedó SUSPENDED en CDB_RESUMABLE con ORA-01536 (suspend_time 10:50:04), y la sesión
+  mostraba el evento "statement suspended, wait error to be cleared".
+- El menor cambio útil fue ampliar la CUOTA de CARGA_HIST a 30 MB y no el tablespace, que tenía sitio.
+  La carga se reanudó sola y terminó: inicio 10:50:04 y fin 10:50:23, es decir unos 19 segundos suspendida y 20000 filas.
+- El alert log lo dejó escrito: "statement in resumable session 'carga-historico' was suspended due to ..."
+  y después "... was resumed".
+- Convierte un fallo en una pausa: el DBA tiene 180 s para arreglarlo sin que la aplicación pierda el trabajo.
+- Dejé a APP_ACADEMIA permisos temporales (INSERT sobre la tabla y RESUMABLE): es deuda de acceso que se paga en la Parte G.
+
+### F.3 Borrar no devuelve espacio: HWM y SHRINK (evidencia 05-hwm-shrink)
+- Antes del DELETE: 20000 filas, 2944 bloques, 23 MB.
+- Tras borrar el 90 % (18000 filas): 2000 filas pero siguen 2944 bloques y 23 MB. El segmento no encoge: los bloques
+  siguen por debajo de la marca de agua alta (HWM), medio vacíos, y la cuota sigue consumida. Un recorrido completo los lee todos.
+- ENABLE ROW MOVEMENT + SHRINK SPACE (compacta en línea, mueve filas y cambia sus ROWID, por eso hace falta ROW MOVEMENT y ASSM):
+  2000 filas, 304 bloques y 2.4 MB. La cuota consumida de CARGA_HIST bajó de 23 MB a 2.4 MB.
+
+### Pregunta tipo examen F1
+- Respuesta: C (ALTER USER hist QUOTA 100M ON tbshist). El ORA-01536 es de cuota y la paga el dueño del segmento (HIST),
+  no quien inserta (APP). Añadir un datafile no resuelve nada: el tablespace ya tenía 500 MB libres.

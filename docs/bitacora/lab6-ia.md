@@ -168,3 +168,25 @@ bash scripts/ops/sysdba.sh scripts/lab6/04-deltas.sql
   toma otra foto y resta para saber el DB time, la CPU y las lecturas lógicas de la carga.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
   docs/bitacora/lab6/evidencia/script/04-deltas.script.log
+
+## Entrada 8
+- **Herramienta:** Perplexity (asistente de IA)
+- **Prompt (literal, copiado tal cual):**
+```text
+quiero que me hagas el trabajo entero y yo voy copiando y pegando todo lo que me digas
+```
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```sql
+bash scripts/ops/sysdba.sh scripts/lab6/05-almacenamiento.sql
+bash scripts/lab6/05-resumable.sh
+bash scripts/ops/sysdba.sh scripts/lab6/05-hwm-shrink.sql
+```
+- **Dónde lo usé (parte, script o pregunta):** Parte F, apartados F.1, F.2 y F.3 y pregunta F1.
+- **Propósito (para qué lo necesitaba):** Crear un tablespace con techo, medir el espacio, provocar errores de cuota y recuperar espacio.
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):**
+  05-almacenamiento.sql crea TBS_ACADEMIA_HIST con MAXSIZE 40M, mide asignado, libre y máximo, crea CARGA_HIST sin cuota,
+  provoca ORA-01950 y ORA-01536, prueba ORA-30041 y fija el umbral de alerta al 80 % y 95 %.
+  05-resumable.sh lanza una carga con RESUMABLE que se suspende por falta de cuota y se reanuda al ampliarla.
+  05-hwm-shrink.sql borra el 90 % de las filas, comprueba que el segmento no encoge y lo compacta con SHRINK SPACE.
+- **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
+  docs/bitacora/lab6/evidencia/script/05-resumable.script.log
