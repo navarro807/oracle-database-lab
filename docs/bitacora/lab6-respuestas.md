@@ -74,3 +74,35 @@ ni que sea de solo lectura.
 - C2. Respuesta: A y C (abrir la PDB con ALTER PLUGGABLE DATABASE freepdb1 OPEN y, ya abierta,
   ALTER PLUGGABLE DATABASE freepdb1 SAVE STATE). SAVE STATE guarda el modo actual de la PDB;
   DISCARD STATE lo borra y la PDB quedaría en MOUNTED tras cada reinicio.
+
+## Parte D · Servicio por aplicación, su cuenta y sus sesiones
+
+### D.1 y D.2 Servicio y cuenta (evidencias 03-servicio y 03-cuenta-app)
+- Creé el servicio academia_app dentro de FREEPDB1 y lo arranqué. En DBA_SERVICES existen
+  FREEPDB1 (por defecto) y academia_app; en V$ACTIVE_SERVICES ambos están arrancados (CON_ID 3).
+  Hice SAVE STATE con el servicio arrancado para que sobreviva a un reinicio.
+- common_user_prefix en mi imagen vale C##: un usuario común (como C##OPS_RO) debe empezar así.
+  APP_ACADEMIA es LOCAL (COMMON = NO), solo existe en FREEPDB1, con QUOTA 0 en USERS.
+- Sus privilegios son CREATE SESSION y SELECT, UPDATE sobre ADMIN_ACADEMIA.ACA_ESTUDIANTES, dados
+  directamente a propósito: es la deuda de acceso que pago en la Parte G.
+
+### D.3 Una sesión de principio a fin (evidencia 03-sesiones)
+- La sesión de la aplicación tenía SID 67, SERIAL# 44117, SPID 2558 y evento PL/SQL lock timer
+  (está dentro de DBMS_SESSION.SLEEP). MODULE=matriculas, ACTION=cierre-periodo y
+  CLIENT_IDENTIFIER=ana.garcia@ucam me dicen qué hacía y para quién, algo que USERNAME no dice.
+- Entró por el servicio academia_app, con PASSWORD, y su proceso de Linux es "oracleFREE (LOCAL=NO)".
+- Con la fila 101 modificada sin confirmar la transacción usaba 1 bloque de undo y 1 registro de undo.
+- CANCEL SQL '67,44117': la aplicación recibió ORA-01013 en la llamada en curso, siguió conectada
+  ("sigo viva") y su transacción siguió abierta: 1 transacción abierta.
+- KILL SESSION '67,44117' IMMEDIATE: sale ORA-00031 (marcada para terminar) y un instante después hay 0 sesiones
+  de la aplicación. La aplicación recibió ORA-00028 y ORA-03114. El UPDATE sin confirmar se deshizo:
+  la fila 101 sigue en ACTIVO. Terminar una sesión nunca confirma su trabajo.
+- El alert log guarda quién mató a quién: KILL SESSION for sid=(67, 44117), requestor SYS, usuario de SO oracle.
+- Orden de preferencia (de la herramienta más pequeña a la más grande): esperar o hablar con el dueño,
+  CANCEL SQL, DISCONNECT/KILL SESSION y nunca kill -9 del proceso como primera opción.
+- Escalera de privilegios: como SYSOPER mi usuario es PUBLIC y DBA_USERS no existe para él (ORA-00942):
+  SYSOPER opera (arrancar, parar) pero no ve los datos.
+
+### Pregunta tipo examen D1
+- Respuesta: B (ALTER SYSTEM CANCEL SQL). Cae la llamada que lleva 40 minutos, pero la sesión y su
+  transacción pendiente siguen vivas. KILL SESSION o kill -9 harían rollback y perderían el trabajo.

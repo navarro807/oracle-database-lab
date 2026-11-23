@@ -121,3 +121,26 @@ bash scripts/ops/ro.sh scripts/ops/validar-arranque.sql freepdb1 | tee $EVID_LAB
   Si todo coincide con lo esperado, la base está arriba para el consumidor.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
   docs/bitacora/lab6/evidencia/script/02-validar-arranque.script.log
+
+## Entrada 6
+- **Herramienta:** Perplexity (asistente de IA)
+- **Prompt (literal, copiado tal cual):**
+```text
+quiero que me hagas el trabajo entero y yo voy copiando y pegando todo lo que me digas
+```
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```sql
+bash scripts/ops/sysdba.sh scripts/lab6/03-servicio.sql
+bash scripts/lab6/03-cuenta-app.sh
+bash scripts/lab6/03-sesiones.sh
+```
+- **Dónde lo usé (parte, script o pregunta):** Parte D, apartados D.1, D.2 y D.3 y pregunta D1.
+- **Propósito (para qué lo necesitaba):** Crear un servicio por aplicación, su cuenta local y ver una sesión de principio a fin.
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):**
+  03-servicio.sql crea y arranca el servicio academia_app en FREEPDB1 con DBMS_SERVICE y guarda el estado.
+  03-cuenta-app.sh crea APP_ACADEMIA como cuenta local con la contraseña de config/.env y le da CREATE SESSION
+  y SELECT, UPDATE sobre aca_estudiantes.
+  03-sesiones.sh abre una sesión de la aplicación por el servicio, la observa en V$SESSION y V$PROCESS,
+  usa CANCEL SQL (cae la llamada, la transacción sigue) y KILL SESSION (cae la sesión y se deshace el UPDATE).
+- **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
+  docs/bitacora/lab6/evidencia/script/03-sesiones.script.log
