@@ -106,3 +106,52 @@ ni que sea de solo lectura.
 ### Pregunta tipo examen D1
 - Respuesta: B (ALTER SYSTEM CANCEL SQL). Cae la llamada que lleva 40 minutos, pero la sesión y su
   transacción pendiente siguen vivas. KILL SESSION o kill -9 harían rollback y perderían el trabajo.
+
+## Parte E · Diccionario y observabilidad
+
+### E.1 La misma consulta, tres identidades (evidencia 04-tres-miradas)
+| Vista | C##OPS_RO en CDB$ROOT | C##OPS_RO en FREEPDB1 | APP_ACADEMIA por academia_app |
+|---|---|---|---|
+| ALL_TABLES de ADMIN_ACADEMIA | 0 | 0 | 1 |
+| ALL_USERS (los que veo) | 37 | 47 | 47 |
+| DBA_USERS | 37 | 47 | ORA-00942 |
+| CDB_USERS | CON_ID 1: 37; CON_ID 3: 47 | CON_ID 3: 47 | ORA-00942 |
+| V$DATAFILE | 17 | 10 | ORA-00942 |
+
+- Nadie miente: cada identidad ve lo que su rol y su contenedor le permiten.
+- ALL_ muestra lo que puedes usar: APP_ACADEMIA ve 1 tabla de ADMIN_ACADEMIA porque tiene un permiso sobre ella.
+  C##OPS_RO tiene SELECT_CATALOG_ROLE, que deja leer el catálogo pero no los datos, y ve 0.
+- DBA_USERS devuelve 37 en la raíz y 47 dentro de FREEPDB1: los usuarios de la PDB son más que los de la raíz.
+- CDB_USERS solo sirve desde la raíz y con CONTAINER_DATA: allí muestra 37 (raíz) y 47 (FREEPDB1).
+  Dentro de la PDB solo ve su propio contenedor (CON_ID 3).
+- V$DATAFILE: 17 desde la raíz (todos los contenedores) y 10 dentro de FREEPDB1. Las V$ también se filtran por contenedor.
+- Para anotar en un incidente: siempre desde dónde y con quién he mirado.
+
+### E.2 De dónde salen las vistas (evidencia spool 04-diccionario)
+- V$FIXED_TABLE tiene 3394 objetos: 1591 tablas X$, 921 vistas V$ y 880 vistas GV$.
+  Las X$ exponen estructuras de memoria de la instancia y datos del control file; no son tablas en disco.
+- V$INSTANCE es GV$INSTANCE filtrada con inst_id = USERENV('Instance').
+- Lo que escribo (V$SESSION, DBA_USERS) son sinónimos públicos de SYS.V_$SESSION y SYS.DBA_USERS.
+- DICTIONARY solo me lista 16 vistas DBA_ porque solo enseña lo concedido a PUBLIC o a mí.
+  Para buscar la vista de cuotas uso DBA_TAB_COMMENTS: la respuesta es DBA_TS_QUOTAS (y DBA_RESUMABLE para lo resumable).
+- En DBA_TS_QUOTAS, MAX_BYTES = -1 significa cuota ilimitada, aunque el comentario del catálogo diga NULL.
+- C##OPS_RO tiene ALL_CONTAINERS = Y: desde la raíz ve los datos de todos los contenedores.
+
+### E.3 Acumulados frente a deltas (evidencia 04-deltas)
+- Los acumulados desde el arranque no significan nada sin el "desde cuándo": mi instancia llevaba 7 minutos arriba
+  con DB time 12.6 s y DB CPU 7.5 s. Un número suelto es una foto.
+- Medí una carga conocida (10 recorridos completos de TIENDASUR.PEDIDO) restando dos fotos:
+  tiempo de reloj 0.88 s, DB time 0.94 s, DB CPU 0.88 s, 53671 lecturas lógicas, 132 ejecuciones (incluye recursivas).
+  Son 5367 lecturas lógicas por recorrido.
+- DB time (0.94 s) es casi igual a DB CPU (0.88 s): la carga casi no esperó, fue trabajo de CPU.
+  Si DB time fuera mucho mayor que DB CPU, la diferencia serían esperas (E/S, bloqueos...).
+- Las tasas por minuto de V$CON_SYSMETRIC salen a 0 porque en ese minuto no había actividad. Dentro de una PDB
+  V$SYSMETRIC sale vacía, por eso se usa V$CON_SYSMETRIC.
+- Esperas acumuladas de la PDB desde el arranque: Concurrency 8 s, User I/O 7.3 s, System I/O 0.2 s.
+  Salen más altas que en el material del profesor porque hubo reinicios recientes.
+- Es un AWR de bolsillo: AWR toma una foto cada hora y su informe es la resta de dos fotos.
+
+### Pregunta tipo examen E1
+- Respuesta: B (solo los usuarios de FREEPDB1). Conectado por el servicio freepdb1, CDB_USERS solo enseña
+  el contenedor actual (CON_ID 3: 47 usuarios en mi salida). La vista existe también dentro de la PDB;
+  los otros contenedores solo se ven desde la raíz con CONTAINER_DATA.

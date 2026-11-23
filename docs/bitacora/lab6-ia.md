@@ -144,3 +144,27 @@ bash scripts/lab6/03-sesiones.sh
   usa CANCEL SQL (cae la llamada, la transacción sigue) y KILL SESSION (cae la sesión y se deshace el UPDATE).
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
   docs/bitacora/lab6/evidencia/script/03-sesiones.script.log
+
+## Entrada 7
+- **Herramienta:** Perplexity (asistente de IA)
+- **Prompt (literal, copiado tal cual):**
+```text
+quiero que me hagas el trabajo entero y yo voy copiando y pegando todo lo que me digas
+```
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```sql
+bash scripts/lab6/04-tres-miradas.sh
+bash scripts/ops/ro.sh scripts/lab6/04-diccionario.sql
+bash scripts/ops/sysdba.sh scripts/lab6/04-deltas.sql
+```
+- **Dónde lo usé (parte, script o pregunta):** Parte E, apartados E.1, E.2 y E.3 y pregunta E1.
+- **Propósito (para qué lo necesitaba):** Entender por qué la misma consulta devuelve cifras distintas según la identidad y el contenedor, y medir una carga con deltas.
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):**
+  04-tres-miradas.sh ejecuta la misma consulta con C##OPS_RO en la raíz, C##OPS_RO en FREEPDB1 y APP_ACADEMIA,
+  y compara USER_, ALL_, DBA_, CDB_ y V$.
+  04-diccionario.sql cuenta las tablas X$ y las vistas V$ y GV$, enseña que V$INSTANCE es GV$INSTANCE filtrada,
+  que lo que escribo son sinónimos públicos y cómo buscar una vista con DBA_TAB_COMMENTS.
+  04-deltas.sql toma una foto de V$SYS_TIME_MODEL y V$SYSSTAT, ejecuta 10 recorridos completos de PEDIDO,
+  toma otra foto y resta para saber el DB time, la CPU y las lecturas lógicas de la carga.
+- **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
+  docs/bitacora/lab6/evidencia/script/04-deltas.script.log
