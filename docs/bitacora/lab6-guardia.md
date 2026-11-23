@@ -14,7 +14,7 @@
 - **Intervención:** ALTER SYSTEM KILL SESSION '63,64045' IMMEDIATE. Es la intervención más pequeña posible: afecta solo a la sesión bloqueadora y su rollback es mínimo.
   CANCEL SQL no servía, porque cancelaría el SLEEP pero la transacción seguiría abierta y el bloqueo permanecería. No se reinició nada ni se tocó la sesión de Ana.
 - **Validación:** sesiones bloqueadas = 0 y la fila 101 sigue en ACTIVO (consulta como SYSDBA dentro de FREEPDB1).
-  Evidencia: 08-diagnostico-inc1.script.log y 08-intervencion-inc1.script.log.
+  Evidencia: 20261123T110149Z_08-diagnostico-inc1.script.log y 20261123T110302Z_08-intervencion-inc1.script.log.
 - **Acción preventiva:** (1) vigilar las sesiones bloqueadas en la lista de turno (pregunta 6) con una alerta cuando una sesión lleve más de unos segundos bloqueando;
   (2) que la aplicación confirme o deshaga rápido, y use SELECT ... FOR UPDATE WAIT n o un tiempo máximo de transacción.
 
@@ -31,7 +31,7 @@
   El SAVE STATE guarda el estado con el servicio arrancado para que no vuelva a quedar parado tras un reinicio (como vimos en la Parte C).
 - **Validación:** por el camino del consumidor. V$ACTIVE_SERVICES muestra academia_app y freepdb1, lsnrctl status anuncia "Service academia_app has 1 instance(s)"
   con la instancia FREE en READY, y APP_ACADEMIA entra por academia_app con el rol ROL_APP_ACADEMIA, lee 17600 estudiantes y actualiza una fila (con rollback).
-  El ORA-00942 final del INSERT en el histórico es el esperado de la Parte G. Evidencia: 08-diagnostico-inc2.script.log y 08-intervencion-inc2.script.log.
+  El ORA-00942 final del INSERT en el histórico es el esperado de la Parte G. Evidencia: 20261123T110546Z_08-diagnostico-inc2.script.log y 20261123T110707Z_08-intervencion-inc2.script.log.
 - **Acción preventiva:** añadir a la lista de turno la comparación entre servicios que existen y servicios arrancados (consulta 6 del diagnóstico) con una alerta;
   hacer SAVE STATE siempre que se cree o se pare un servicio de aplicación; y una conexión de prueba por academia_app que avise antes que los usuarios.
 
@@ -47,7 +47,7 @@
 - **Intervención:** ALTER USER app_academia ACCOUNT UNLOCK, dentro de FREEPDB1. Es lo más pequeño que lo resuelve: no se cambió la contraseña (nadie la cambió ni hay señales de que esté comprometida),
   no se tocó el perfil y no se reinició nada. Antes de desbloquear, el diagnóstico confirmó que el bloqueo era manual y no por intentos fallidos.
 - **Validación:** la cuenta pasó a OPEN y APP_ACADEMIA entra por academia_app con el rol ROL_APP_ACADEMIA, lee 17600 estudiantes y actualiza una fila (con rollback).
-  El ORA-00942 final del INSERT en el histórico es el esperado de la Parte G. Evidencia: 08-diagnostico-inc3.script.log y 08-intervencion-inc3.script.log.
+  El ORA-00942 final del INSERT en el histórico es el esperado de la Parte G. Evidencia: 20261123T110814Z_08-diagnostico-inc3.script.log y 20261123T110922Z_08-intervencion-inc3.script.log.
 - **Acción preventiva:** (1) que el script de bajas trabaje solo sobre cuentas de personas (por ejemplo las del perfil PRF_PERSONAS) y tenga una lista de cuentas de aplicación protegidas;
   (2) que haga primero una ejecución en seco que muestre qué cuentas va a bloquear y que alguien la revise; (3) alertar cuando una cuenta de aplicación no esté en OPEN
   (la consulta 7 del diagnóstico) antes de que falle un despliegue.

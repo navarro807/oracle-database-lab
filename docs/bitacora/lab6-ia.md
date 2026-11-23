@@ -34,7 +34,7 @@ bash scripts/ops/backup-estado.sh lab6-inicio
   alumno.sh genera login.sql con mi código en el prompt y muestra la cabecera de las evidencias.
   backup-estado.sh para la base de forma limpia, copia el volumen y la vuelve a arrancar.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
-  docs/bitacora/lab6/evidencia/script/00-backup-lab6-inicio.script.log
+  docs/bitacora/lab6/evidencia/script/20261123T103212Z_00-backup-lab6-inicio.script.log
 
 ## Entrada 2
 - **Herramienta:** Perplexity (asistente de IA)
@@ -46,7 +46,7 @@ y avisarme de cuando se hace y todo eso, yo solo copio y pego todo
 ```
 - **Código recibido (el fragmento, o la ruta del archivo donde está):**
 ```sql
-bash scripts/ops/ro.sh scripts/ops/turno.sql | tee $EVID_LAB6/script/01-turno.script.log
+bash scripts/ops/ro.sh scripts/ops/turno.sql | tee $EVID_LAB6/script/20261123T103542Z_01-turno.script.log
 bash scripts/ops/ro.sh scripts/lab6/01-automatizacion.sql freepdb1
 ```
 - **Dónde lo usé (parte, script o pregunta):** Parte B, apartados B.1 y B.2.
@@ -58,7 +58,7 @@ bash scripts/ops/ro.sh scripts/lab6/01-automatizacion.sql freepdb1
   01-automatizacion.sql entra por freepdb1 y muestra AutoTask, ventanas, umbrales MMON, AWR y Scheduler.
   tee guarda en un archivo lo mismo que se ve en pantalla, como evidencia.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
-  docs/bitacora/lab6/evidencia/script/01-turno.script.log
+  docs/bitacora/lab6/evidencia/script/20261123T103542Z_01-turno.script.log
 
 ## Entrada 3
 - **Herramienta:** Perplexity (asistente de IA)
@@ -79,7 +79,7 @@ bash scripts/ops/sysdba.sh scripts/lab6/02-parametros.sql
   Prueba db_files (estático): MEMORY da ORA-02095; SPFILE se acepta pero solo vale al reiniciar; RESET lo deshace.
   Intenta cambiar processes dentro de FREEPDB1 y da ORA-65040.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
-  docs/bitacora/lab6/evidencia/script/02-parametros.script.log
+  docs/bitacora/lab6/evidencia/script/20261123T103725Z_02-parametros.script.log
 
 ## Entrada 4
 - **Herramienta:** Perplexity (asistente de IA)
@@ -89,7 +89,7 @@ quiero que me hagas el trabajo entero y yo voy copiando y pegando todo lo que me
 ```
 - **Código recibido (el fragmento, o la ruta del archivo donde está):**
 ```sql
-bash scripts/lab6/02-estados-pdb.sh | tee $EVID_LAB6/script/02-estados-pdb.script.log
+bash scripts/lab6/02-estados-pdb.sh | tee $EVID_LAB6/script/20261123T104138Z_02-estados-pdb.script.log
 ```
 - **Dónde lo usé (parte, script o pregunta):** Parte C, apartado C.2.
 - **Propósito (para qué lo necesitaba):** Pasar FREEPDB1 por sus estados y comprobar el efecto de SAVE STATE tras un reinicio.
@@ -100,7 +100,7 @@ bash scripts/lab6/02-estados-pdb.sh | tee $EVID_LAB6/script/02-estados-pdb.scrip
   Hace DISCARD STATE y reinicia la instancia: FREEPDB1 queda MOUNTED y falla con ORA-01109.
   Después la abre, hace SAVE STATE y reinicia otra vez: ahora vuelve sola a READ WRITE.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
-  docs/bitacora/lab6/evidencia/script/02-estados-pdb.script.log
+  docs/bitacora/lab6/evidencia/script/20261123T104138Z_02-estados-pdb.script.log
 
 ## Entrada 5
 - **Herramienta:** Perplexity (asistente de IA)
@@ -110,7 +110,7 @@ quiero que me hagas el trabajo entero y yo voy copiando y pegando todo lo que me
 ```
 - **Código recibido (el fragmento, o la ruta del archivo donde está):**
 ```sql
-bash scripts/ops/ro.sh scripts/ops/validar-arranque.sql freepdb1 | tee $EVID_LAB6/script/02-validar-arranque.script.log
+bash scripts/ops/ro.sh scripts/ops/validar-arranque.sql freepdb1 | tee $EVID_LAB6/script/20261123T104238Z_02-validar-arranque.script.log
 ```
 - **Dónde lo usé (parte, script o pregunta):** Parte C, apartado C.3 y preguntas C1 y C2.
 - **Propósito (para qué lo necesitaba):** Validar que la base está arriba desde el servicio de la PDB, como lo haría la aplicación.
@@ -120,7 +120,7 @@ bash scripts/ops/ro.sh scripts/ops/validar-arranque.sql freepdb1 | tee $EVID_LAB
   los errores ORA- del alert log desde el último arranque y los datafiles que no están ONLINE.
   Si todo coincide con lo esperado, la base está arriba para el consumidor.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
-  docs/bitacora/lab6/evidencia/script/02-validar-arranque.script.log
+  docs/bitacora/lab6/evidencia/script/20261123T104238Z_02-validar-arranque.script.log
 
 ## Entrada 6
 - **Herramienta:** Perplexity (asistente de IA)
@@ -143,7 +143,7 @@ bash scripts/lab6/03-sesiones.sh
   03-sesiones.sh abre una sesión de la aplicación por el servicio, la observa en V$SESSION y V$PROCESS,
   usa CANCEL SQL (cae la llamada, la transacción sigue) y KILL SESSION (cae la sesión y se deshace el UPDATE).
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
-  docs/bitacora/lab6/evidencia/script/03-sesiones.script.log
+  docs/bitacora/lab6/evidencia/script/20261123T104525Z_03-sesiones.script.log
 
 ## Entrada 7
 - **Herramienta:** Perplexity (asistente de IA)
@@ -167,7 +167,7 @@ bash scripts/ops/sysdba.sh scripts/lab6/04-deltas.sql
   04-deltas.sql toma una foto de V$SYS_TIME_MODEL y V$SYSSTAT, ejecuta 10 recorridos completos de PEDIDO,
   toma otra foto y resta para saber el DB time, la CPU y las lecturas lógicas de la carga.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
-  docs/bitacora/lab6/evidencia/script/04-deltas.script.log
+  docs/bitacora/lab6/evidencia/script/20261123T104800Z_04-deltas.script.log
 
 ## Entrada 8
 - **Herramienta:** Perplexity (asistente de IA)
@@ -189,7 +189,7 @@ bash scripts/ops/sysdba.sh scripts/lab6/05-hwm-shrink.sql
   05-resumable.sh lanza una carga con RESUMABLE que se suspende por falta de cuota y se reanuda al ampliarla.
   05-hwm-shrink.sql borra el 90 % de las filas, comprueba que el segmento no encoge y lo compacta con SHRINK SPACE.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
-  docs/bitacora/lab6/evidencia/script/05-resumable.script.log
+  docs/bitacora/lab6/evidencia/script/20261123T105024Z_05-resumable.script.log
 
 ## Entrada 9
 - **Herramienta:** Perplexity (asistente de IA)
@@ -212,7 +212,7 @@ bash scripts/lab6/06-cascada.sh
   de Ana con tres contraseñas erróneas.
   06-cascada.sh crea dos usuarios temporales para ver que revocar ADMIN OPTION no se propaga y revocar GRANT OPTION sí.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
-  docs/bitacora/lab6/evidencia/script/06-probar-acceso.script.log
+  docs/bitacora/lab6/evidencia/script/20261123T105501Z_06-probar-acceso.script.log
 
 ## Entrada 10
 - **Herramienta:** Perplexity (asistente de IA)
@@ -236,7 +236,7 @@ bash scripts/lab6/07-adr-trazas.sh
   07-archivos-criticos.sql lista control files, redo, SPFILE, password file, FRA y copias RMAN.
   07-adr-trazas.sh enseña el ADR y activa con DBMS_MONITOR la traza de la sesión de APP_ACADEMIA para ver sus lecturas con tkprof.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
-  docs/bitacora/lab6/evidencia/script/07-adr-trazas.script.log
+  docs/bitacora/lab6/evidencia/script/20261123T105833Z_07-adr-trazas.script.log
 
 ## Entrada 11
 - **Herramienta:** Perplexity (asistente de IA)
@@ -261,4 +261,4 @@ ALTER USER app_academia ACCOUNT UNLOCK;
   KILL SESSION termina solo la sesión que bloquea (INC-601). START_SERVICE arranca el servicio parado y SAVE STATE guarda el estado para que sobreviva a un reinicio (INC-602).
   ACCOUNT UNLOCK desbloquea la cuenta de la aplicación (INC-603), que no se bloqueó por intentos fallidos sino de forma manual.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
-  docs/bitacora/lab6/evidencia/script/08-intervencion-inc3.script.log
+  docs/bitacora/lab6/evidencia/script/20261123T110922Z_08-intervencion-inc3.script.log
