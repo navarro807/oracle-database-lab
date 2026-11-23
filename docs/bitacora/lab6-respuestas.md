@@ -296,3 +296,40 @@ ni que sea de solo lectura.
 ### Pregunta tipo examen H1
 - Respuesta: B. Tras un ALTER TABLE ... MOVE los índices quedan UNUSABLE sin dar error, y el optimizador los ignora:
   por eso las consultas por cliente van lentas. La tabla no queda INVALID y no se pierden estadísticas.
+## Parte I · Guardia nocturna
+
+### Pregunta 20: una línea por incidente
+- INC-601 (secretaría colgada). Evidencia clave: en la consulta 1 del diagnóstico la sesión 227 (ANA_GARCIA) esperaba 28 s en enq: TX - row lock contention, bloqueada por el SID 63 (APP_ACADEMIA, módulo matriculas, acción cierre-periodo); la consulta 4 decía que solo se deshacían 1 bloque y 1 registro de undo.
+  Intervención: ALTER SYSTEM KILL SESSION '63,64045' IMMEDIATE, solo la sesión bloqueadora.
+  Validación: la fila 101 quedó en ACTIVO y no había sesiones bloqueadas.
+- INC-602 (ORA-12514). Evidencia clave: en la consulta 6, academia_app existía pero con ARRANCADO = NO mientras FREEPDB1 estaba en SI, así que la base estaba bien y el listener no anunciaba el servicio.
+  Intervención: DBMS_SERVICE.START_SERVICE('academia_app') y después ALTER PLUGGABLE DATABASE FREEPDB1 SAVE STATE.
+  Validación: V$ACTIVE_SERVICES mostró academia_app, el listener lo anunció en READY y APP_ACADEMIA entró por ese servicio y leyó 17600 estudiantes.
+- INC-603 (ORA-28000). Evidencia clave: en la consulta 7, APP_ACADEMIA salía LOCKED y no LOCKED(TIMED), con perfil DEFAULT y 10 intentos permitidos, así que no fue por fallar la contraseña sino un bloqueo manual del script de bajas.
+  Intervención: ALTER USER app_academia ACCOUNT UNLOCK, sin cambiar la contraseña.
+  Validación: la cuenta pasó a OPEN y APP_ACADEMIA entró por academia_app con ROL_APP_ACADEMIA y leyó 17600 estudiantes.
+
+## Simulacro de examen 1Z0-182
+Formato: letra y Parte del laboratorio donde lo comprobé.
+- S1: B (Parte B y F). Las alertas de umbral de espacio las genera MMON, no un trabajo del Scheduler.
+- S2: C (Parte C). Con DEFERRED el cambio solo vale para las sesiones que se conecten después.
+- S3: B (Parte C). CREATE PFILE FROM MEMORY incluye también lo que calcula Oracle: mi copia tuvo 125 líneas frente a 34 del SPFILE.
+- S4: B y C (Parte C). OPEN READ WRITE FORCE o cerrar y volver a abrir; el OPEN READ WRITE a secas dio ORA-65019.
+- S5: C (Parte C). DBA_PDB_SAVED_STATES guarda el estado de cada PDB.
+- S6: B (Parte C). Sin RESTRICTED SESSION sale ORA-01035.
+- S7: A (Parte D). DBMS_SERVICE creó y arrancó academia_app.
+- S8: B (Parte D). V$SESSION.PADDR = V$PROCESS.ADDR.
+- S9: C (Parte D). CANCEL SQL corta la llamada pero la transacción sigue abierta.
+- S10: C (Parte D). Como SYSOPER el usuario es PUBLIC y por eso no veía DBA_USERS (ORA-00942).
+- S11: B (Parte E). V$CON_SYSMETRIC; V$SYSMETRIC sale vacía dentro de una PDB.
+- S12: A y C (Parte E). DB time suma CPU y esperas no Idle de las sesiones de primer plano.
+- S13: B (Parte F). La cuota la paga el dueño del segmento, no quien inserta; con CARGA_HIST pasó igual.
+- S14: A y C (Parte F). No se concede cuota sobre undo ni sobre temporal (ORA-30041 con TEMP).
+- S15: A y C (Parte F). La sentencia se suspende hasta el timeout y se ve en DBA_RESUMABLE.
+- S16: B (Parte F). SHRINK SPACE exige ENABLE ROW MOVEMENT y ASSM.
+- S17: B (Parte G). Con intentos fallidos el estado es LOCKED(TIMED).
+- S18: B (Parte G). Con ADMIN OPTION la revocación no cae en cascada.
+- S19: A y B (Parte H). MOVE sin UPDATE INDEXES y ALTER INDEX ... UNUSABLE.
+- S20: B (Parte H). DBMS_MONITOR.SESSION_TRACE_ENABLE, como hice con la sesión 62,23683.
+- S21: C (Parte H). DIAGNOSTIC_DEST fija la raíz del ADR (/opt/oracle).
+- S22: C (Parte I). Primero identificar al bloqueador y qué hace, como en INC-601.
