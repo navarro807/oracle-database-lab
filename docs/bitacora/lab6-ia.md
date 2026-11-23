@@ -101,3 +101,23 @@ bash scripts/lab6/02-estados-pdb.sh | tee $EVID_LAB6/script/02-estados-pdb.scrip
   Después la abre, hace SAVE STATE y reinicia otra vez: ahora vuelve sola a READ WRITE.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
   docs/bitacora/lab6/evidencia/script/02-estados-pdb.script.log
+
+## Entrada 5
+- **Herramienta:** Perplexity (asistente de IA)
+- **Prompt (literal, copiado tal cual):**
+```text
+quiero que me hagas el trabajo entero y yo voy copiando y pegando todo lo que me digas
+```
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```sql
+bash scripts/ops/ro.sh scripts/ops/validar-arranque.sql freepdb1 | tee $EVID_LAB6/script/02-validar-arranque.script.log
+```
+- **Dónde lo usé (parte, script o pregunta):** Parte C, apartado C.3 y preguntas C1 y C2.
+- **Propósito (para qué lo necesitaba):** Validar que la base está arriba desde el servicio de la PDB, como lo haría la aplicación.
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):**
+  validar-arranque.sql, con la cuenta de solo lectura, muestra por dónde he entrado (contenedor y servicio),
+  el estado de la instancia y la base, el modo de cada PDB y su estado guardado, los servicios activos,
+  los errores ORA- del alert log desde el último arranque y los datafiles que no están ONLINE.
+  Si todo coincide con lo esperado, la base está arriba para el consumidor.
+- **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
+  docs/bitacora/lab6/evidencia/script/02-validar-arranque.script.log

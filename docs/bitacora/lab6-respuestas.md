@@ -56,3 +56,21 @@ ni que sea de solo lectura.
   FREEPDB1 volvió sola a READ WRITE: así "arriba" se comprueba por el camino del consumidor.
 - En el alert log aparecen ORA-65019 (provocado por mí a propósito) y ORA-00800 [Set Priority Failed] [LGWR],
   que es un aviso del proceso LGWR al no poder subir su prioridad en Docker sobre WSL; no afecta a la base.
+
+### C.3 Validar el arranque (evidencias 02-estados-pdb y 02-validar-arranque)
+- Criterio de "arriba": no basta con que un comando diga "Database opened". Lo comprobé por
+  el camino del consumidor: entrando por el servicio freepdb1 sale CONTENEDOR=FREEPDB1,
+  READ WRITE, estado guardado OPEN, servicio freepdb1 activo y ningún datafile fuera de línea.
+- Ruido conocido del arranque (lo anoto para perseguir solo lo nuevo):
+  ORA-00800 [Set Priority Failed] [LGWR]: Linux en contenedor no deja a Oracle subir la prioridad
+  de VKTM y LGWR; es ruido conocido de Docker/WSL.
+  ORA-65019: lo provoqué yo a propósito en el paso 2 de C.2 (abrir una PDB ya abierta).
+
+### Preguntas tipo examen de la Parte C
+- C1. Respuesta: B (ALTER SYSTEM SET db_files = 300 SCOPE = SPFILE).
+  Es estático: SCOPE=MEMORY da ORA-02095. Con SPFILE el valor se aplica en el próximo arranque
+  sin afectar a la instancia actual. SCOPE=BOTH fallaría igual por incluir memoria; ALTER SESSION
+  no vale para parámetros del sistema; RESET no pone el valor 300.
+- C2. Respuesta: A y C (abrir la PDB con ALTER PLUGGABLE DATABASE freepdb1 OPEN y, ya abierta,
+  ALTER PLUGGABLE DATABASE freepdb1 SAVE STATE). SAVE STATE guarda el modo actual de la PDB;
+  DISCARD STATE lo borra y la PDB quedaría en MOUNTED tras cada reinicio.
