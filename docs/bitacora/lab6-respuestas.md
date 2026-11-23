@@ -201,3 +201,45 @@ ni que sea de solo lectura.
 ### Pregunta tipo examen F1
 - Respuesta: C (ALTER USER hist QUOTA 100M ON tbshist). El ORA-01536 es de cuota y la paga el dueño del segmento (HIST),
   no quien inserta (APP). Añadir un datafile no resuelve nada: el tablespace ya tenía 500 MB libres.
+
+## Parte G · Gobierno del acceso
+
+### G.1 Perfil, roles, cuenta nominal y deuda (evidencia 06-gobierno-acceso)
+- No supongas los valores por defecto: mi perfil DEFAULT tiene FAILED_LOGIN_ATTEMPTS 10, PASSWORD_LIFE_TIME 180,
+  PASSWORD_LOCK_TIME 1, PASSWORD_GRACE_TIME 7, INACTIVE_ACCOUNT_TIME 365 y PASSWORD_VERIFY_FUNCTION NULL.
+  Es lo que hay que revisar el primer día: sin función de verificación se aceptan contraseñas débiles.
+- Creé PRF_PERSONAS para personas: 3 intentos fallidos, bloqueo de 1 minuto (solo en laboratorio; en producción
+  1 día o desbloqueo manual), contraseña de 90 días con 7 de gracia, cuenta inactiva a los 90 días y
+  ORA12C_VERIFY_FUNCTION. La función rechazó una contraseña corta con ORA-28003 y ORA-20000 (menos de 8 caracteres).
+- Roles funcionales: ROL_LECTURA_ACADEMIA (SELECT ANY TABLE ON SCHEMA ADMIN_ACADEMIA, privilegio de esquema de 23ai/26ai:
+  lee las tablas actuales y futuras de ese esquema y solo de ese), ROL_SECRETARIA_ACADEMIA (incluye el de lectura y
+  UPDATE solo sobre la columna ESTADO de ACA_ESTUDIANTES) y ROL_APP_ACADEMIA (SELECT y UPDATE sobre ACA_ESTUDIANTES).
+- Alta nominal: ANA_GARCIA, con el perfil PRF_PERSONAS, el rol ROL_SECRETARIA_ACADEMIA y como único privilegio de sistema CREATE SESSION.
+  Una persona, una cuenta: altas y bajas con un solo GRANT/REVOKE de rol.
+- Deuda de acceso pagada: APP_ACADEMIA pasó de privilegios sueltos (Parte D) y permisos temporales (INSERT y RESUMABLE de la Parte F)
+  a UN rol, ROL_APP_ACADEMIA. Solo conserva CREATE SESSION como privilegio de sistema.
+
+### G.2 Validar con las identidades reales (evidencia 06-probar-acceso)
+- Ana entra por freepdb1 y tiene 2 roles activos: ROL_LECTURA_ACADEMIA y ROL_SECRETARIA_ACADEMIA. Lee 20000 estudiantes y
+  60000 matrículas, aunque nadie le concedió ACA_MATRICULAS por nombre: lo lee por el privilegio de esquema.
+- Puede cambiar el ESTADO de un estudiante (1 row updated, con rollback), pero no su nombre ni borrar: ORA-41900
+  "missing UPDATE/DELETE privilege on ADMIN_ACADEMIA.ACA_ESTUDIANTES". En 26ai el error nombra el privilegio que falta;
+  en versiones anteriores el mismo caso daba el genérico ORA-01031.
+- APP_ACADEMIA sigue funcionando por su rol (lee 17600 estudiantes y actualiza una fila), pero ya no puede insertar en el histórico:
+  ORA-00942, porque sin privilegio el objeto ni siquiera existe para ella.
+- Tras tres contraseñas erróneas (ORA-01017) la cuenta de Ana pasó a LOCKED(TIMED) y hasta la correcta dio ORA-28000.
+  El DBA la desbloqueó con ALTER USER ... ACCOUNT UNLOCK; en producción, antes del UNLOCK se confirma la identidad por otro canal.
+
+### G.3 ADMIN OPTION frente a GRANT OPTION (evidencia 06-cascada)
+- Monté dos usuarios temporales: a U6_A le di CREATE SESSION WITH ADMIN OPTION (sistema) y SELECT sobre ACA_ASIGNATURAS
+  WITH GRANT OPTION (objeto), y U6_A los repartió a U6_B.
+- Al revocar a U6_A los dos privilegios, el de SISTEMA de U6_B sobrevive (CREATE SESSION sigue en U6_B)
+  y el de OBJETO de U6_B cae en cascada (0 privilegios de objeto).
+- Regla: ADMIN OPTION (sistema y roles) no se propaga al revocar; GRANT OPTION (objeto) sí.
+- Limpieza: los usuarios de prueba se borraron (ciclo de vida: también incluye la baja).
+
+### Preguntas tipo examen G1 y G2
+- G1. Respuesta: B (solo CREATE TABLE). El privilegio de sistema concedido con ADMIN OPTION no se revoca en cascada,
+  mientras que el de objeto con GRANT OPTION sí (SELECT ON hr.emp desaparece de B).
+- G2. Respuesta: B. SELECT ANY TABLE ON SCHEMA ventas permite leer todas las tablas actuales y futuras del esquema VENTAS,
+  y solo de ese esquema.

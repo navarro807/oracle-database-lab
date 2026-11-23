@@ -190,3 +190,26 @@ bash scripts/ops/sysdba.sh scripts/lab6/05-hwm-shrink.sql
   05-hwm-shrink.sql borra el 90 % de las filas, comprueba que el segmento no encoge y lo compacta con SHRINK SPACE.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
   docs/bitacora/lab6/evidencia/script/05-resumable.script.log
+
+## Entrada 9
+- **Herramienta:** Perplexity (asistente de IA)
+- **Prompt (literal, copiado tal cual):**
+```text
+quiero que me hagas el trabajo entero y yo voy copiando y pegando todo lo que me digas
+```
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```sql
+bash scripts/lab6/06-gobierno-acceso.sh
+bash scripts/lab6/06-probar-acceso.sh
+bash scripts/lab6/06-cascada.sh
+```
+- **Dónde lo usé (parte, script o pregunta):** Parte G, apartados G.1, G.2 y G.3 y preguntas G1 y G2. La IA redactó también borradores de las respuestas de las Partes B a G en lab6-respuestas.md.
+- **Propósito (para qué lo necesitaba):** Montar el gobierno del acceso (perfil, roles, cuenta nominal, deuda pagada, cascada) y tener un borrador de las respuestas.
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):**
+  06-gobierno-acceso.sh crea el perfil PRF_PERSONAS, los roles funcionales, la cuenta nominal ANA_GARCIA y cambia los privilegios
+  sueltos de APP_ACADEMIA por un solo rol, retirando los permisos temporales de la Parte F.
+  06-probar-acceso.sh entra como Ana y como la aplicación para comprobar lo que pueden y no pueden hacer, y provoca el bloqueo
+  de Ana con tres contraseñas erróneas.
+  06-cascada.sh crea dos usuarios temporales para ver que revocar ADMIN OPTION no se propaga y revocar GRANT OPTION sí.
+- **Evidencia de ejecución (archivo de docs/bitacora/lab6/evidencia con mi cabecera):**
+  docs/bitacora/lab6/evidencia/script/06-probar-acceso.script.log
