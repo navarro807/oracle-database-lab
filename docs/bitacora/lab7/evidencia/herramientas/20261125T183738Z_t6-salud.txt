@@ -1,0 +1,44 @@
+== EVIDENCIA alumno=E048 hora=2026-11-25T18:37:38Z origen=t6/salud
+== EVIDENCIA contenedor=b5d714c0e880 dbid=1509902213 arranque=2026-11-25T18:31:29 scn=10511078
+== 1 · Carga frente a capacidad: AAS por minuto (V$CON_SYSMETRIC_HISTORY) y CPU_COUNT ==
+
+MINUT        AAS
+----- ----------
+18:33          0
+18:34          0
+18:35          0
+18:36          0
+
+SEMAFORO
+----------------------------------------------------------------------------------------------------
+VERDE    AAS máximo 0 con CPU_COUNT 2: hay holgura
+== 2 · En qué se va el tiempo (ASH, muestras de 1 s de sesiones activas de esta PDB) ==
+
+WAIT_CLASS     EVENTO                                     MUESTRAS    PCT
+-------------- ---------------------------------------- ---------- ------
+User I/O       direct path write                                25   43.9
+CPU            ON CPU                                           22   38.6
+User I/O       db file sequential read                           2    3.5
+Other          Free private memory to OS                         2    3.5
+User I/O       Data file init write                              2    3.5
+User I/O       Disk file operations I/O                          1    1.8
+== 3 · Quién lo consume: SQL_ID y módulo con más muestras ==
+
+SQL_ID        MODULE           ACTION           MUESTRAS    PCT TEXTO
+------------- ---------------- -------------- ---------- ------ --------------------------------------------
+c1swnp4n3x974 sqlplus@b5d714c0                         8   14.8
+              e880 (TNS V1-V3)
+
+2dt1vq42sjjv9 sqlplus@b5d714c0                         7   13.0
+              e880 (TNS V1-V3)
+
+5x1tm1c4p6xcu sqlplus@b5d714c0                         6   11.1
+              e880 (TNS V1-V3)
+
+5227ykzxr46kh sqlplus@b5d714c0                         5    9.3
+              e880 (TNS V1-V3)
+
+2cwpmr1krubaq sqlplus@b5d714c0                         4    7.4
+              e880 (TNS V1-V3)
+
+-- Siguiente paso: con el SQL_ID de arriba, «t6 plan SQL_ID» (playbook PB-2). Con esperas de una sola clase, PB-1 rama 2.
