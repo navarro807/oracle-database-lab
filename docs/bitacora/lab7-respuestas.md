@@ -11,8 +11,19 @@ CÓMO SE RELLENA
 
 ## Parte B · C01 · Más sesiones no es más rendimiento
 1. ¿Cuántas llamadas por segundo y qué p95 tuviste con 1, 2 y 8 sesiones? ¿Qué número de sesiones recomiendas y por qué?
+   **Respuesta:** Con 1 sesión conseguí 4,4 llamadas/s y p95 de 238,7 ms; con 2 sesiones, 9,0 llamadas/s y p95 de 269 ms; con 8 sesiones, 8,4 llamadas/s y p95 de 1 370,1 ms.
+   Pasar de 1 a 2 sesiones duplica el trabajo (4,4 a 9,0) con casi la misma latencia; pasar de 2 a 8 no mejora nada (9,0 a 8,4) y la p95 se multiplica por 5.
+   Recomiendo un pool de 2 sesiones, igual a CPU_COUNT = 2: da el mismo throughput que 8 sesiones y la p95 baja de 1 370 ms a 269 ms.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261125T184517Z_C01_entender.txt, 20261125T184721Z_C01_validar.txt y 20261125T184723Z_C01_observar.txt.
 2. ¿Qué evento domina con 8 sesiones y qué significa en Oracle Free?
+   **Respuesta:** Con 8 sesiones domina resmgr:cpu quantum: 234 de 325 muestras de ASH (72 %); el 28 % restante es ON CPU (91 muestras). El AAS fue 7,6 con CPU_COUNT = 2.
+   En Oracle Free es la espera de turno que impone el Resource Manager al limitar la instancia a 2 CPU: la sesión está lista para trabajar pero no tiene CPU, así que hace cola.
+   Con 1 sesión el AAS fue 0,9 y el 100 % de las muestras estaba ON CPU, sin esperas.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261125T184636Z_C01_diagnosticar.txt.
 3. Comprueba la ley de Little (N = X · R) con tus tres medidas.
+   **Respuesta:** N = X · R. Con 1 sesión: 4,4 llamadas/s x 0,2132 s = 0,94, es decir, 1. Con 2 sesiones: 9,0 x 0,2173 s = 1,96, es decir, 2. Con 8 sesiones: 8,4 x 0,8893 s = 7,47, es decir, 7,5.
+   La ley se cumple en las tres tandas. Con 8 sesiones hay unas 7,5 llamadas en el sistema pero el throughput es el mismo que con 2, así que la latencia media sube de 0,22 s a 0,89 s: las sesiones sobrantes solo añaden cola.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261125T184723Z_C01_observar.txt.
 
 ## Parte C · C03 · Literales y análisis completos
 1. Análisis completos y tiempo con literales, con variables de enlace y con CURSOR_SHARING = FORCE (tus cifras).
