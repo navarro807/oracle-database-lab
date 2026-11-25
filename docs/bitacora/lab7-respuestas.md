@@ -27,11 +27,24 @@ CÓMO SE RELLENA
 
 ## Parte C · C03 · Literales y análisis completos
 1. Análisis completos y tiempo con literales, con variables de enlace y con CURSOR_SHARING = FORCE (tus cifras).
+   **Respuesta:** Con literales hice 5 053 análisis completos y las 5 000 fichas tardaron 10 370 ms (2,074 ms por ficha); el 83 % del tiempo de la sesión (8 650 ms) fue análisis.
+   Con CURSOR_SHARING = FORCE bajé a 28 análisis completos y 550 ms (0,110 ms por ficha). Con variable de enlace, 28 análisis completos y 360 ms (0,072 ms por ficha), unas 29 veces menos tiempo que con literales.
+   En la shared pool quedaron 4 353 cursores de una sola ejecución (unos 116 MB) con literales, frente a 1 cursor con variable de enlace.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261125T185009Z_C03_diagnosticar.txt, 20261125T185011Z_C03_solucionar.txt y 20261125T185015Z_C03_observar.txt.
 2. ¿Por qué FORCE es un puente y no la solución? ¿Qué ve el DBA en V$SQL que lo delata (FORCE_MATCHING_SIGNATURE)?
+   **Respuesta:** FORCE hace que Oracle sustituya todos los literales de la sentencia por variables del sistema (en V$SQL el texto queda con :"SYS_B_0"; una sola sentencia con 5 000 ejecuciones). Alivia, pero cambia también los literales que dan selectividad al optimizador, es más lento que la variable de enlace (550 ms frente a 360 ms) y oculta el defecto de la aplicación, por lo que solo vale mientras se corrige el código.
+   Lo que delata el problema en V$SQL es la FORCE_MATCHING_SIGNATURE: una sola firma (14573098645096361820) con 4 343 SQL_ID distintos ejecutados una vez cada uno significa que la aplicación no usa variables de enlace.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261125T185009Z_C03_diagnosticar.txt y 20261125T185015Z_C03_observar.txt.
 
 ## Parte C · C04 · El informe que se desborda a TEMP
 1. Bloques de TEMP, tipo de pasada y tiempo del informe antes y después. ¿Qué hacía el disparador de logon?
+   **Respuesta:** Antes: el informe de 1 000 000 de pedidos escribió 5 456 bloques en TEMP (42,6 MB), se ejecutó en 1 PASS y tardó 8 710 ms. Después de quitar el disparador: 0 bloques de TEMP, ordenación OPTIMAL y 4 050 ms. Con el TOP 100: 0 bloques, OPTIMAL y 130 ms.
+   El disparador de logon T6.C04_LEGADO se ejecutaba al iniciar sesión la cuenta de informes y fijaba workarea_size_policy = MANUAL y sort_area_size = 1 MB, anulando la PGA automática. La ordenación necesitaba unos 48 MB y solo usaba 1 016 KB.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261125T185120Z_C04_entender.txt, 20261125T185124Z_C04_diagnosticar.txt y 20261125T185132Z_C04_solucionar.txt.
 2. ¿Por qué el TOP 100 cabe en memoria y el informe completo no?
+   **Respuesta:** El informe completo ordena 1 000 000 de filas y necesita unos 48 MB de área de trabajo; con la política MANUAL solo disponía de 1 MB, así que tuvo que volcar a TEMP y volver a leer (1 PASS).
+   El TOP 100 se resuelve con SORT ORDER BY STOPKEY: solo mantiene las 100 mejores filas, así que necesita KB y no MB y cabe en memoria (OPTIMAL, 0 bloques de TEMP, 130 ms). Reducir antes de ordenar vale más que ordenar mejor o dar más memoria.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261125T185135Z_C04_validar.txt y 20261125T185139Z_C04_observar.txt.
 
 ## Parte D · C07 · EXPLAIN PLAN frente al plan real
 1. Copia el predicado que delata el problema en el plan real y explica de dónde sale.

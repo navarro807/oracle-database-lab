@@ -45,3 +45,28 @@ Además, el texto de las respuestas de C01 en docs/bitacora/lab7-respuestas.md (
 - **Propósito (para qué lo necesitaba):** Ejecutar las seis fases de C01 en mi contenedor y redactar las respuestas con mis cifras.
 - **Qué hace (con mis palabras; línea a línea si es SQL corto):** provocar lanza carga con 1 y con 8 sesiones; entender saca llamadas por segundo y p50/p95 de cada tanda; diagnosticar compara el AAS con CPU_COUNT = 2 y muestra que con 8 sesiones el 72 % de las muestras de ASH está en resmgr:cpu quantum (cola de CPU); solucionar dimensiona el pool a 2 sesiones y registra la línea base del panel en T6.LINEA_BASE; validar comprueba que con 2 sesiones se atiende lo mismo que con 8 y que la p95 baja de 1 370 ms a 269 ms; observar verifica la ley de Little con las tres tandas.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab7/evidencia con mi cabecera):** docs/bitacora/lab7/evidencia/casos/20261125T184515Z_C01_provocar.txt, 20261125T184517Z_C01_entender.txt, 20261125T184636Z_C01_diagnosticar.txt, 20261125T184720Z_C01_solucionar.txt, 20261125T184721Z_C01_validar.txt y 20261125T184723Z_C01_observar.txt
+
+## Entrada 3
+- **Herramienta:** Perplexity (chat de IA, sin agente; los comandos y los commits los ejecuto yo desde mi terminal)
+- **Prompt (literal, copiado tal cual):**
+```text
+cd ~/oracle-database-lab
+source ~/.bashrc
+caso C03 provocar
+caso C03 entender
+caso C03 diagnosticar
+caso C03 solucionar
+caso C03 validar
+caso C03 observar
+```
+(Es el comienzo de mi mensaje; después pegué la salida completa de cada comando. Hice lo mismo con C04.)
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```bash
+caso C03 provocar && entender && diagnosticar && solucionar && validar && observar
+caso C04 provocar && entender && diagnosticar && solucionar && validar && observar
+```
+Además, el texto de las respuestas de C03 y C04 en docs/bitacora/lab7-respuestas.md (apartados Parte C · C03 y Parte C · C04), redactado por la IA a partir de mis salidas reales.
+- **Dónde lo usé (parte, script o pregunta):** Parte C, casos C03 y C04, y las cuatro preguntas de esos casos en lab7-respuestas.md.
+- **Propósito (para qué lo necesitaba):** Ejecutar las seis fases de C03 y C04 en mi contenedor y redactar las respuestas con mis cifras.
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):** C03: provocar lanza 5 000 fichas con el id pegado en el texto (literales) y vacía la shared pool; entender mide el coste por ficha y los cursores de un solo uso; diagnosticar cuenta los hard parses, el tiempo de análisis y la FORCE_MATCHING_SIGNATURE; solucionar repite con variable de enlace; validar compara hard parses, tiempo y cursores; observar prueba CURSOR_SHARING = FORCE como parche. C04: provocar crea un disparador de logon que fuerza workarea_size_policy = MANUAL y sort_area_size = 1 MB y lanza el informe de 1 000 000 de pedidos, que desborda a TEMP (1 PASS); diagnosticar muestra el área de trabajo y el disparador; solucionar borra el disparador y compara el informe completo con un TOP 100 (FETCH FIRST 100 ROWS); validar comprueba que no hay disparador, que el TOP 100 no toca TEMP y que se ordena en memoria (OPTIMAL).
+- **Evidencia de ejecución (archivo de docs/bitacora/lab7/evidencia con mi cabecera):** docs/bitacora/lab7/evidencia/casos/20261125T185005Z_C03_provocar.txt, 20261125T185007Z_C03_entender.txt, 20261125T185009Z_C03_diagnosticar.txt, 20261125T185011Z_C03_solucionar.txt, 20261125T185013Z_C03_validar.txt, 20261125T185015Z_C03_observar.txt, 20261125T185118Z_C04_provocar.txt, 20261125T185120Z_C04_entender.txt, 20261125T185124Z_C04_diagnosticar.txt, 20261125T185132Z_C04_solucionar.txt, 20261125T185135Z_C04_validar.txt y 20261125T185139Z_C04_observar.txt
