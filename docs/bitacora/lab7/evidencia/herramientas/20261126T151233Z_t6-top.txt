@@ -1,0 +1,9 @@
+== EVIDENCIA alumno=E048 hora=2026-11-26T15:12:33Z origen=t6/top
+== EVIDENCIA contenedor=b5d714c0e880 dbid=1509902213 arranque=2026-11-26T14:36:07 scn=10540389
+== Top 5 sentencias por gets (filtro: inc607) ==
+
+SQL_ID         PLAN_HASH       EJEC SEG_TOTAL    MS_EJEC  GETS_EJEC FILAS_EJEC TEXTO
+------------- ---------- ---------- --------- ---------- ---------- ---------- ------------------------------------------
+9n40brmn38yn4 1393464357          1       0.2      212.9       1486          1 SELECT sql_handle, plan_name, enabled, acc
+aprs0g8f8jftp 1001747286          2       0.1       51.8          1          1 SELECT /* OPT_DYN_SAMP */ /*+ ALL_ROWS IGN
+-- Siguiente paso: «t6 plan SQL_ID» para ver el plan real de la que más pesa.

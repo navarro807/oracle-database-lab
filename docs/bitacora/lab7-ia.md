@@ -132,3 +132,37 @@ Además, el texto de las respuestas de C17 y C18 en docs/bitacora/lab7-respuesta
 - **Propósito (para qué lo necesitaba):** Resolver INC-604 con el método de ocho pasos y proteger un plan bueno con SPM, y redactar las respuestas con mis cifras.
 - **Qué hace (con mis palabras; línea a línea si es SQL corto):** C17: provocar toma una instantánea AWR, lanza 120 s de carga con la V1 (3 sesiones) y otra instantánea, y registra la línea base; entender mide el SLI (p95) frente al SLO de 20 ms; diagnosticar usa ASH (quién y en qué), AWR (qué SQL pesa), ADDM (lo cuantifica) y el plan real con el filtro TO_NUMBER; solucionar despliega la V2 (parámetro VARCHAR2), un solo cambio; validar repite la misma carga y comprueba p95, capacidad, lecturas por ejecución y uso del índice. C18: provocar simula el lunes (con histograma) y el martes (sin histograma, tras la recogida nocturna); diagnosticar muestra el plan nuevo y que el histograma de ESTADO ha desaparecido; solucionar carga el plan del lunes desde AWR con DBMS_SPM.LOAD_PLANS_FROM_AWR como línea base aceptada y activa; validar comprueba que el informe usa la línea base con 189 lecturas; observar ejecuta la evolución y muestra que el plan nuevo no se acepta.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab7/evidencia con mi cabecera):** docs/bitacora/lab7/evidencia/casos/20261126T145410Z_C17_provocar.txt, 20261126T145412Z_C17_entender.txt, 20261126T145416Z_C17_diagnosticar.txt, 20261126T145418Z_C17_solucionar.txt, 20261126T145628Z_C17_validar.txt, 20261126T145630Z_C17_observar.txt, 20261126T145916Z_C18_provocar.txt, 20261126T145919Z_C18_entender.txt, 20261126T145922Z_C18_diagnosticar.txt, 20261126T145927Z_C18_solucionar.txt, 20261126T145930Z_C18_validar.txt y 20261126T145933Z_C18_observar.txt
+
+## Entrada 7
+- **Herramienta:** Perplexity (chat de IA, sin agente; los comandos y los commits los ejecuto yo desde mi terminal)
+- **Prompt (literal, copiado tal cual):**
+```text
+cd ~/oracle-database-lab
+source ~/.bashrc
+incidente INC-606 romper
+incidente INC-606 pistas
+echo "=========== PB-2 ==========="; cat scripts/t6/playbooks/PB-2_una-consulta-va-lenta.md
+echo "=========== RB-3 ==========="; cat scripts/t6/runbooks/RB-3_indices-con-red.md
+```
+(Es el comienzo de mi mensaje; después pegué la salida completa. Hice lo mismo con INC-607 e INC-610 y con cada comando de diagnóstico y de arreglo.)
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```sql
+-- INC-606
+ALTER INDEX t6.ix_t6_ped_cp REBUILD ONLINE;
+ALTER SYSTEM FLUSH SHARED_POOL;
+-- INC-607
+-- t6 spm quitar SQL_68ec219200df8fe9   (DBMS_SPM.DROP_SQL_PLAN_BASELINE)
+ALTER SYSTEM FLUSH SHARED_POOL;
+-- INC-610
+ALTER SYSTEM RESET optimizer_index_cost_adj SCOPE = BOTH;
+ALTER SYSTEM FLUSH SHARED_POOL;
+-- diagnóstico
+SELECT index_name, status, visibility FROM dba_indexes WHERE owner = 'T6' AND index_name = 'IX_T6_PED_CP';
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY_SQL_PLAN_BASELINE('SQL_68ec219200df8fe9', NULL, 'BASIC +NOTE'));
+SELECT con_id, sid, name, value FROM v$spparameter WHERE name = 'optimizer_index_cost_adj';
+```
+Además, el texto de los tres postmortems en docs/bitacora/lab7-respuestas.md (apartados Parte G · Incidente 1, 2 y 3), redactado por la IA a partir de mis salidas reales.
+- **Dónde lo usé (parte, script o pregunta):** Parte G, incidentes INC-606, INC-607 e INC-610, y sus postmortems en lab7-respuestas.md.
+- **Propósito (para qué lo necesitaba):** Diagnosticar, arreglar con el cambio mínimo, verificar y documentar mis tres incidentes (semilla 48) siguiendo los playbooks PB-2 y PB-3 y los runbooks RB-3, RB-4 y RB-1.
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):** INC-606: el índice IX_T6_PED_CP estaba UNUSABLE, así que el optimizador recorría la tabla; ALTER INDEX ... REBUILD ONLINE lo deja VALID sin bloquear la escritura. INC-607: había una línea base de SQL Plan Management FIXED con un plan de recorrido completo; t6 spm quitar borra esa línea base y el optimizador vuelve a elegir el índice de ID_CLIENTE. INC-610: optimizer_index_cost_adj valía 4600 en la PDB (el valor por defecto es 100), lo que encarece los índices a ojos del optimizador; ALTER SYSTEM RESET lo devuelve al valor por defecto y lo quita del SPFILE de la PDB. En los tres casos ALTER SYSTEM FLUSH SHARED_POOL vacía la shared pool de mi PDB para medir con cursores nuevos.
+- **Evidencia de ejecución (archivo de docs/bitacora/lab7/evidencia con mi cabecera):** docs/bitacora/lab7/evidencia/incidentes/20261126T150229Z_INC-606_romper.txt, 20261126T150615Z_INC-606_verificar.txt, 20261126T151020Z_INC-607_romper.txt, 20261126T151401Z_INC-607_verificar.txt, 20261126T151426Z_INC-610_romper.txt y 20261126T151642Z_INC-610_verificar.txt; y las evidencias de las herramientas t6 en docs/bitacora/lab7/evidencia/herramientas/

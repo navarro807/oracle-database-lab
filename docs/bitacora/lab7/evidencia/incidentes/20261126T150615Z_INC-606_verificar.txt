@@ -1,0 +1,7 @@
+== EVIDENCIA alumno=E048 hora=2026-11-26T15:06:15Z origen=t6/INC-606_verificar
+== EVIDENCIA contenedor=b5d714c0e880 dbid=1509902213 arranque=2026-11-26T14:36:07 scn=10539926
+== INC-606 · verificar · alumno E048 · semilla 48
+OK    Incidente INC-606 roto para E048 (semilla 48) el 2026-11-26 15:02 · modo de rotura UNUSABLE
+OK    IX_T6_PED_CP: VALID y VISIBLE
+OK    La V2 de la aplicación vuelve a usar IX_T6_PED_CP
+OK    Lecturas por búsqueda: 184

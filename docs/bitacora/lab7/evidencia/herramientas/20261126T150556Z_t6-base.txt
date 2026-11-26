@@ -1,0 +1,10 @@
+== EVIDENCIA alumno=E048 hora=2026-11-26T15:05:56Z origen=t6/base
+== EVIDENCIA contenedor=b5d714c0e880 dbid=1509902213 arranque=2026-11-26T14:36:07 scn=10539507
+BEGIN
+*
+ERROR at line 1:
+ORA-12899: value too large for column "T6"."LINEA_BASE"."CASO" (actual: 6, maximum: 4)
+ORA-06512: at line 3
+Help: https://docs.oracle.com/error-help/db/ora-12899/
+
+== Líneas base registradas (T6.LINEA_BASE) ==
