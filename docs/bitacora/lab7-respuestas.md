@@ -98,11 +98,24 @@ CÓMO SE RELLENA
 
 ## Parte F · C17 · INC-604 con AWR, ASH y ADDM
 1. SLI y SLO; p95 antes y después; instantáneas AWR que usaste.
+   **Respuesta:** El SLI es la p95 de la búsqueda por código postal medida en T6.APP_LOG y el SLO acordado es p95 < 20 ms. Antes (V1, 3 sesiones, 120 s) la p95 era 484,8 ms (p50 136,7 ms, 1 868 llamadas): incumple el SLO. Después (V2, la misma carga) la p95 es 1,2 ms y se atienden 32 057 búsquedas frente a 1 868: cumple el SLO.
+   Usé las instantáneas AWR 30 (14:52:04) y 31 (14:54:08), que cubren exactamente la carga de la V1; la línea base ANTES quedó registrada en T6.LINEA_BASE (SQL_ID 0dbx7196jdajy, plan 2571571058, 170,96 ms y 5 230 lecturas por ejecución).
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T145412Z_C17_entender.txt, 20261126T145410Z_C17_provocar.txt y 20261126T145628Z_C17_validar.txt.
 2. ¿Qué dijeron ASH, AWR y ADDM, y qué no podían decirte? ¿Cuál fue el ÚNICO cambio?
+   **Respuesta:** ASH dijo quién y en qué: casi todas las muestras eran del SQL_ID 0dbx7196jdajy (250 ON CPU y 65 en resmgr:cpu quantum). AWR (intervalo 30 a 31) dijo qué SQL pesa: ese SQL_ID con 1 867 ejecuciones, 319,2 s y 5 230 lecturas por ejecución. ADDM lo cuantificó (DB time de 355 s, AAS 2,82; Top SQL con impacto de 2,48 sesiones, el 87,1 % de la actividad) y recomendó ejecutar el SQL Tuning Advisor.
+   Lo que no podían decirme era la causa. La dio el plan real: filter(TO_NUMBER("CODIGO_POSTAL")=:B1) con TABLE ACCESS FULL, porque la V1 pasa un NUMBER contra una columna VARCHAR2 y el índice IX_T6_PED_CP no sirve.
+   El ÚNICO cambio fue desplegar buscar_cp_v2 (parámetro VARCHAR2; la web llama a buscar_cp_v2(TO_CHAR(:cp))) en lugar de buscar_cp_v1 (NUMBER). Con ello la V2 usa INDEX RANGE SCAN y hace 95 lecturas por ejecución frente a 5 230.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T145416Z_C17_diagnosticar.txt, 20261126T145418Z_C17_solucionar.txt y 20261126T145630Z_C17_observar.txt.
 
 ## Parte F · C18 · SQL Plan Management
 1. PLAN_HASH_VALUE y lecturas del lunes, del martes y con la línea base.
+   **Respuesta:** El lunes (con histograma en ESTADO) el informe de pendientes usaba el plan 1767728868 (INDEX RANGE SCAN en IX_T6_PED_ESTADO) con 194 lecturas por ejecución y 11,5 ms. El martes, tras la recogida nocturna con METHOD_OPT FOR ALL COLUMNS SIZE 1 (sin histograma), usaba el plan 2571571058 (TABLE ACCESS FULL) con 5 227 lecturas y 39,3 ms: mismo SQL_ID 8hn59jfgw00y7 y otro plan.
+   Con la línea base SPM (SQL_PLAN_0a27u7nan424ba00b9863, cargada desde AWR con las instantáneas 34 a 35) vuelve al plan 1767728868 con 189 lecturas y 28,1 ms, sin tocar las estadísticas del martes.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T145916Z_C18_provocar.txt, 20261126T145919Z_C18_entender.txt, 20261126T145927Z_C18_solucionar.txt y 20261126T145930Z_C18_validar.txt.
 2. ¿Qué hizo la evolución con el plan nuevo y por qué? ¿Qué queda pendiente para que no vuelva a pasar?
+   **Respuesta:** El optimizador quería el recorrido completo y lo guardó en la historia del plan como SQL_PLAN_0a27u7nan424b95a18d93, origen AUTO-CAPTURE y NO aceptado. La evolución (SPM EVOLVE, TASK_71) ejecutó los dos planes y lo comparó: el plan nuevo no pasó el criterio de beneficio porque su rendimiento verificado era 0,15781 veces peor que el de la línea base, así que siguió sin aceptarse. SPM no adivina el mejor plan, protege el plan probado.
+   Pendiente para que no vuelva a pasar: la causa sigue ahí, la preferencia METHOD_OPT de PEDIDO (SIZE 1) que elimina el histograma de ESTADO. Hay que corregirla (histograma en ESTADO con las estadísticas recogidas con red, como en C13 y el runbook RB-2) y vigilar con DBA_HIST_SQLSTAT por PLAN_HASH_VALUE. Además, la sentencia debe analizarla la cuenta de la aplicación, porque con SYS la evolución falla.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T145933Z_C18_observar.txt y 20261126T145922Z_C18_diagnosticar.txt.
 
 ## Parte G · Incidente 1 · INC-6NN
 - **Síntoma (con números):**

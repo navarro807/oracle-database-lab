@@ -108,3 +108,27 @@ Además, el texto de las respuestas de C12, C13 y C14 en docs/bitacora/lab7-resp
 - **Propósito (para qué lo necesitaba):** Ejecutar las seis fases de C12, C13 y C14 en mi contenedor y redactar las respuestas con mis cifras.
 - **Qué hace (con mis palabras; línea a línea si es SQL corto):** C12: carga 200 000 filas en CARRITO sin recoger estadísticas (el optimizador cree que tiene 100), diagnostica el NESTED LOOPS de 212 169 lecturas con el plan real y STALE_STATS, y lo arregla recogiendo solo CARRITO con DBMS_STATS.GATHER_TABLE_STATS(no_invalidate => FALSE), que pasa a HASH JOIN con 5 907 lecturas. C13: pasa 135 277 pedidos a estado E; PUBLISH = FALSE deja las estadísticas nuevas como pendientes, se prueban en mi sesión con optimizer_use_pending_statistics = TRUE, se publican con PUBLISH_PENDING_STATS, se restauran con RESTORE_TABLE_STATS desde el historial y se bloquean con LOCK_TABLE_STATS (la recogida posterior da ORA-20005). C14: crea el índice (estado, canal, fecha_pedido) INVISIBLE ONLINE, lo prueba solo en mi sesión con optimizer_use_invisible_indexes = TRUE, lo publica con ALTER INDEX VISIBLE y mide el redo con el índice invisible y visible.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab7/evidencia con mi cabecera):** docs/bitacora/lab7/evidencia/casos/20261126T144331Z_C12_provocar.txt, 20261126T144333Z_C12_entender.txt, 20261126T144335Z_C12_diagnosticar.txt, 20261126T144338Z_C12_solucionar.txt, 20261126T144340Z_C12_validar.txt, 20261126T144342Z_C12_observar.txt, 20261126T144350Z_C13_provocar.txt, 20261126T144352Z_C13_entender.txt, 20261126T144356Z_C13_diagnosticar.txt, 20261126T144407Z_C13_solucionar.txt, 20261126T144409Z_C13_validar.txt, 20261126T144447Z_C13_observar.txt, 20261126T144457Z_C14_provocar.txt, 20261126T144500Z_C14_entender.txt, 20261126T144502Z_C14_diagnosticar.txt, 20261126T144518Z_C14_solucionar.txt, 20261126T144520Z_C14_validar.txt y 20261126T144544Z_C14_observar.txt
+
+## Entrada 6
+- **Herramienta:** Perplexity (chat de IA, sin agente; los comandos y los commits los ejecuto yo desde mi terminal)
+- **Prompt (literal, copiado tal cual):**
+```text
+cd ~/oracle-database-lab
+source ~/.bashrc
+t6 fra
+for f in provocar entender diagnosticar solucionar validar observar; do caso C18 $f; done
+t6 awr lista
+ls -lt docs/bitacora/lab7/evidencia/casos | head -8
+```
+(Es el comienzo de mi mensaje; después pegué la salida completa. Hice lo mismo con C17 usando caso C17.)
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```bash
+for f in provocar entender diagnosticar solucionar validar observar; do caso C17 $f; done
+for f in provocar entender diagnosticar solucionar validar observar; do caso C18 $f; done
+t6 awr lista
+```
+Además, el texto de las respuestas de C17 y C18 en docs/bitacora/lab7-respuestas.md (apartados Parte F · C17 y Parte F · C18), redactado por la IA a partir de mis salidas reales.
+- **Dónde lo usé (parte, script o pregunta):** Parte F, casos C17 y C18, y las cuatro preguntas de esos casos en lab7-respuestas.md.
+- **Propósito (para qué lo necesitaba):** Resolver INC-604 con el método de ocho pasos y proteger un plan bueno con SPM, y redactar las respuestas con mis cifras.
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):** C17: provocar toma una instantánea AWR, lanza 120 s de carga con la V1 (3 sesiones) y otra instantánea, y registra la línea base; entender mide el SLI (p95) frente al SLO de 20 ms; diagnosticar usa ASH (quién y en qué), AWR (qué SQL pesa), ADDM (lo cuantifica) y el plan real con el filtro TO_NUMBER; solucionar despliega la V2 (parámetro VARCHAR2), un solo cambio; validar repite la misma carga y comprueba p95, capacidad, lecturas por ejecución y uso del índice. C18: provocar simula el lunes (con histograma) y el martes (sin histograma, tras la recogida nocturna); diagnosticar muestra el plan nuevo y que el histograma de ESTADO ha desaparecido; solucionar carga el plan del lunes desde AWR con DBMS_SPM.LOAD_PLANS_FROM_AWR como línea base aceptada y activa; validar comprueba que el informe usa la línea base con 189 lecturas; observar ejecuta la evolución y muestra que el plan nuevo no se acepta.
+- **Evidencia de ejecución (archivo de docs/bitacora/lab7/evidencia con mi cabecera):** docs/bitacora/lab7/evidencia/casos/20261126T145410Z_C17_provocar.txt, 20261126T145412Z_C17_entender.txt, 20261126T145416Z_C17_diagnosticar.txt, 20261126T145418Z_C17_solucionar.txt, 20261126T145628Z_C17_validar.txt, 20261126T145630Z_C17_observar.txt, 20261126T145916Z_C18_provocar.txt, 20261126T145919Z_C18_entender.txt, 20261126T145922Z_C18_diagnosticar.txt, 20261126T145927Z_C18_solucionar.txt, 20261126T145930Z_C18_validar.txt y 20261126T145933Z_C18_observar.txt
