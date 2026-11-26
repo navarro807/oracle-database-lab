@@ -117,7 +117,7 @@ CÓMO SE RELLENA
    Pendiente para que no vuelva a pasar: la causa sigue ahí, la preferencia METHOD_OPT de PEDIDO (SIZE 1) que elimina el histograma de ESTADO. Hay que corregirla (histograma en ESTADO con las estadísticas recogidas con red, como en C13 y el runbook RB-2) y vigilar con DBA_HIST_SQLSTAT por PLAN_HASH_VALUE. Además, la sentencia debe analizarla la cuenta de la aplicación, porque con SYS la evolución falla.
    Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T145933Z_C18_observar.txt y 20261126T145922Z_C18_diagnosticar.txt.
 
-## Parte G · Incidente 1 · INC-6NN
+## Parte G · Incidente 1 · INC-606
 - **Síntoma (con números):** INC-606: la búsqueda por código postal (buscar_cp_v2, SQL_ID 53mx77snb43uw) volvió a ir lenta sin que nadie desplegara nada: 20 ejecuciones a 95,2 ms y 5 310 lecturas por ejecución, con el plan 2571571058 (TABLE ACCESS FULL de PEDIDO). Rotura registrada el 2026-11-26 a las 15:02 (20261126T150229Z_INC-606_romper.txt).
 - **Playbook y pasos seguidos (herramientas y vistas):** Playbook PB-2 y runbook RB-3. t6 top 5 gets t6_cp me dio el SQL_ID y las lecturas; t6 plan 53mx77snb43uw mostró TABLE ACCESS FULL con filter(CODIGO_POSTAL=:B1), sin TO_NUMBER, así que no era el problema de tipo de dato de C07 e INC-604; t6 indices PEDIDO (DBA_INDEXES) mostró IX_T6_PED_CP en STATUS UNUSABLE y el resto VALID; DBA_INDEX_USAGE confirmó que el índice se usó hasta las 15:02:25.
 - **Causa raíz:** El índice IX_T6_PED_CP estaba UNUSABLE (aunque VISIBLE): el optimizador no puede usarlo y recorre la tabla entera en cada búsqueda.
@@ -125,7 +125,7 @@ CÓMO SE RELLENA
 - **Verificación (archivo de evidencia con todo OK):** docs/bitacora/lab7/evidencia/incidentes/20261126T150615Z_INC-606_verificar.txt con las 4 comprobaciones en OK (IX_T6_PED_CP VALID y VISIBLE; la V2 usa el índice). Mi medida: plan 2982358210 (INDEX RANGE SCAN), 184 lecturas por ejecución (incluye el primer análisis tras vaciar la shared pool) y 8,9 ms frente a 5 310 lecturas y 95,2 ms.
 - **Prevención (qué evitaría que se repita):** Vigilar el estado de los índices (DBA_INDEXES.STATUS distinto de VALID) con una alerta, y comprobarlo siempre después de mantenimientos que dejan índices UNUSABLE (mover o reorganizar tablas, cargas masivas); incluir un REBUILD y la comprobación t6 indices en el procedimiento de cierre de esos cambios.
 
-## Parte G · Incidente 2 · INC-6NN
+## Parte G · Incidente 2 · INC-607
 - **Síntoma (con números):** INC-607: el historial del cliente (SQL t6_inc607_historial, módulo atencion_cliente) tardaba aunque IX_T6_PED_CLIENTE estaba VALID, VISIBLE y con estadísticas: 20 ejecuciones a 78,58 ms y 5 311 lecturas por ejecución, plan 2571571058 (TABLE ACCESS FULL). Rotura el 2026-11-26 a las 15:10 (20261126T151020Z_INC-607_romper.txt).
 - **Playbook y pasos seguidos (herramientas y vistas):** Playbook PB-3 y runbook RB-4. t6 spm lista inc607 mostró la línea base SQL_PLAN_6jv11k80dz3z995a18d93 (handle SQL_68ec219200df8fe9) con ENABLED, ACCEPTED y FIXED = YES, origen MANUAL-LOAD-FROM-CURSOR-CACHE, creada a las 15:10:20; DBMS_XPLAN.DISPLAY_SQL_PLAN_BASELINE mostró que ese plan es un TABLE ACCESS FULL (coste 1445); y DISPLAY_CURSOR con +NOTE dijo SQL plan baseline SQL_PLAN_6jv11k80dz3z995a18d93 used for this statement.
 - **Causa raíz:** Una línea base de SQL Plan Management FIXED con un plan de recorrido completo: con FIXED el optimizador solo usa ese plan y no puede elegir el índice de ID_CLIENTE por muy bueno que sea; se cargó un plan sin medirlo, que es el antipatrón de RB-4.
@@ -133,7 +133,7 @@ CÓMO SE RELLENA
 - **Verificación (archivo de evidencia con todo OK):** docs/bitacora/lab7/evidencia/incidentes/20261126T151401Z_INC-607_verificar.txt con las 4 comprobaciones en OK (no queda ninguna línea base FIXED y el historial usa un índice por ID_CLIENTE; 103 lecturas de media incluyendo el primer análisis). Mi medida con la sentencia de la aplicación como T6_APP: plan 3753295838 (INDEX RANGE SCAN en IX_T6_PED_CLIENTE), 117 lecturas y 8,42 ms por ejecución frente a 5 311 lecturas y 78,58 ms.
 - **Prevención (qué evitaría que se repita):** No fijar (FIXED = YES) un plan sin medirlo: cargar líneas base solo de planes probados (lecturas y ms por ejecución registrados con t6 base) y dejarlas evolucionar en lugar de fijarlas; revisar periódicamente t6 spm lista buscando FIXED = YES y exigir que cada línea base tenga su medida y su responsable.
 
-## Parte G · Incidente 3 · INC-6NN
+## Parte G · Incidente 3 · INC-610
 - **Síntoma (con números):** INC-610: varias pantallas de la web lentas a la vez (la búsqueda por código postal, el panel de pendientes...). La V2 (SQL_ID 53mx77snb43uw) volvía al plan 2571571058 (TABLE ACCESS FULL) con 5 634 lecturas por ejecución y 57,5 ms. Rotura el 2026-11-26 a las 15:14 (20261126T151426Z_INC-610_romper.txt).
 - **Playbook y pasos seguidos (herramientas y vistas):** Playbook PB-3 (paso 3, muchos planes a la vez, causa común) y runbook RB-1. Consulté V$SYSTEM_PARAMETER en FREEPDB1: con ISDEFAULT = FALSE no salía el culpable (en la PDB esa marca no es fiable), pero al listar los optimizer_* vi optimizer_index_cost_adj = 4600 (el valor por defecto es 100); V$SPPARAMETER mostró que estaba guardado en el SPFILE de la PDB (CON_ID 3, SID *, valor 4600). t6 top y caso C17 solucionar (plan real) confirmaron el TABLE ACCESS FULL.
 - **Causa raíz:** Alguien (el consultor que vino a afinar la base) cambió con ALTER SYSTEM en la PDB optimizer_index_cost_adj a 4600: ese parámetro escala el coste de los accesos por índice, y con 4600 el optimizador cree que usar un índice cuesta unas 46 veces más, así que prefiere recorrer la tabla en todas las consultas.
@@ -143,4 +143,8 @@ CÓMO SE RELLENA
 
 ## Parte H · Reflexión
 1. De todo el laboratorio, ¿qué cambio dio más mejora por menos riesgo? Justifícalo con tus números.
+   **Respuesta:** El cambio con más mejora por menos riesgo fue el de INC-604 (C17): desplegar buscar_cp_v2, que pasa el código postal como VARCHAR2 en lugar de NUMBER. Es un único cambio en la aplicación, sin tocar la base, y reversible volviendo a la V1.
+   Con la misma carga (3 sesiones, 120 s) la p95 bajó de 484,8 ms a 1,2 ms (cumple el SLO de 20 ms), las lecturas por ejecución de 5 230 a 95 (unas 55 veces menos) y las búsquedas atendidas pasaron de 1 868 a 32 057. En segundo lugar, el pool de C01 pasado de 8 a 2 sesiones tiene riesgo casi nulo y mantiene el mismo throughput (9,0 frente a 8,4 llamadas/s) con la p95 de 1 370 ms a 269 ms.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T145628Z_C17_validar.txt y 20261126T145630Z_C17_observar.txt.
 2. Un caso no evaluable (sin ★) que hayas hecho y qué aprendiste de él (opcional, cuenta para la certificación).
+   **Respuesta:** No he hecho ningún caso sin estrella; me he centrado en los diez evaluables y en mis tres incidentes.
