@@ -68,15 +68,33 @@ CÓMO SE RELLENA
 
 ## Parte E · C12 · Estadísticas obsoletas
 1. Filas según las estadísticas y reales; método de unión y lecturas antes y después.
+   **Respuesta:** Según las estadísticas CARRITO tenía 100 filas (última recogida 14:43:29) y en realidad tenía 200 100: un error de unas 2 000 veces (STALE = YES, 200 000 inserciones desde la última recogida).
+   Antes el informe usaba NESTED LOOPS (plan 3942147839, E-Rows 100 frente a A-Rows 200K) y hacía 212 169 lecturas lógicas en 454 ms. Después de recoger las estadísticas de CARRITO usa HASH JOIN (plan 582079594, E-Rows 200K) y hace 5 907 lecturas, unas 36 veces menos.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T144333Z_C12_entender.txt, 20261126T144335Z_C12_diagnosticar.txt y 20261126T144340Z_C12_validar.txt.
 2. ¿Por qué la tarea automática no lo habría arreglado a tiempo? ¿Quién debe recoger y cuándo?
+   **Respuesta:** La tarea automática (auto optimizer stats collection, ENABLED) solo recoge en la ventana de mantenimiento, que empieza a las 22:00 y dura 4 h, y con un umbral STALE_PERCENT del 10 %. Una carga que termina de madrugada, por ejemplo a las 3:00, llega tarde: el informe de primera hora ya sufre el plan malo.
+   Debe recoger el proceso que carga, al terminar la carga, con GATHER_TABLE_STATS solo sobre la tabla que cambió (CARRITO) y con no_invalidate => FALSE para que los cursores se rehagan ya (runbook RB-2). Con optimizer_adaptive_plans = TRUE el join se corregiría a mitad de ejecución, pero la estimación seguiría equivocada (E-Rows 100).
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T144342Z_C12_observar.txt y 20261126T144338Z_C12_solucionar.txt.
 
 ## Parte E · C13 · El ciclo de estadísticas con red
 1. Describe el ciclo que seguiste (pendientes, probar, publicar, restaurar, bloquear) con la vista que comprueba cada paso.
+   **Respuesta:** Tras pasar 135 277 pedidos a estado E, el optimizador estimaba 250 000 filas (reparte 1/4 por estado, ESTADO sin histograma) frente a 185 277 reales, y PEDIDO estaba STALE = YES (DBA_TAB_STATISTICS, DBA_TAB_MODIFICATIONS con 135 277 updates, DBA_TAB_COL_STATISTICS).
+   Ciclo: 1) pendientes: SET_TABLE_PREFS PUBLISH = FALSE y GATHER_TABLE_STATS con histograma en ESTADO; compruebo con DBA_TAB_PENDING_STATS que quedan sin publicar (pendientes de 14:43:59, publicadas de 14:43:44). 2) probar: en mi sesión optimizer_use_pending_statistics = TRUE y EXPLAIN PLAN da 185 277. 3) publicar: PUBLISH_PENDING_STATS y PUBLISH = TRUE (STALE = NO). 4) restaurar: DBA_TAB_STATS_HISTORY (retención de 31 días) y RESTORE_TABLE_STATS a hace 60 segundos, que devolvió ESTADO a sin histograma. 5) bloquear: LOCK_TABLE_STATS y STATTYPE_LOCKED = ALL.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T144352Z_C13_entender.txt, 20261126T144356Z_C13_diagnosticar.txt, 20261126T144407Z_C13_solucionar.txt, 20261126T144409Z_C13_validar.txt y 20261126T144447Z_C13_observar.txt.
 2. ¿Qué error obtuviste al recoger sobre estadísticas bloqueadas y cómo se recoge si de verdad hace falta?
+   **Respuesta:** Obtuve ORA-20005: object statistics are locked (stattype = ALL) al ejecutar GATHER_TABLE_STATS sobre PEDIDO después de LOCK_TABLE_STATS. Es la protección de las tablas de trabajo frente a la tarea automática.
+   Si de verdad hace falta recoger, se hace como decisión consciente: UNLOCK_TABLE_STATS (lo que hice yo) o GATHER_TABLE_STATS con force => TRUE, y se vuelve a bloquear si procede.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T144447Z_C13_observar.txt.
 
 ## Parte E · C14 · El índice invisible
 1. Lecturas por apertura del panel antes y después. ¿Cómo probaste el índice sin que lo viera nadie más?
+   **Respuesta:** Antes, el panel hacía 5 261 lecturas lógicas por apertura y 40,4 ms (TABLE ACCESS FULL de un millón de filas para mostrar 2 056 pedidos). Después de publicar el índice IX_T6_C14_PEND (estado, canal, fecha_pedido) hace 118 lecturas y 0,76 ms con INDEX RANGE SCAN.
+   Lo probé sin que nadie más lo viera: creé el índice INVISIBLE ONLINE (con él invisible el plan seguía en TABLE ACCESS FULL) y, solo en mi sesión, puse optimizer_use_invisible_indexes = TRUE; ahí salió el INDEX RANGE SCAN con 116 buffers. Después ALTER INDEX ... VISIBLE.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T144457Z_C14_provocar.txt, 20261126T144518Z_C14_solucionar.txt y 20261126T144520Z_C14_validar.txt.
 2. Redo con el índice INVISIBLE y VISIBLE: ¿qué demuestra?
+   **Respuesta:** Cambiar el canal de 20 000 pedidos generó 9 008 KB de redo sin mantener el índice, 10 402 KB con el índice INVISIBLE y 10 403 KB con el índice VISIBLE.
+   Demuestra que invisible no es gratis al escribir: el optimizador no lo usa para leer, pero cada DML lo mantiene igual que si fuera visible (unos 1 394 KB más, cerca del 15 %). INVISIBLE sirve para probar y para volver atrás sin reconstruir, no para ahorrar coste de escritura.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T144544Z_C14_observar.txt.
 
 ## Parte F · C17 · INC-604 con AWR, ASH y ADDM
 1. SLI y SLO; p95 antes y después; instantáneas AWR que usaste.

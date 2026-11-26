@@ -87,3 +87,24 @@ Además, el texto de las respuestas de C07 y C08 en docs/bitacora/lab7-respuesta
 - **Propósito (para qué lo necesitaba):** Ejecutar las seis fases de C07 y C08 en mi contenedor y redactar las respuestas con mis cifras.
 - **Qué hace (con mis palabras; línea a línea si es SQL corto):** C07: provocar lanza 40 búsquedas de la web con la variable de tipo NUMBER contra la columna CODIGO_POSTAL (VARCHAR2); entender compara EXPLAIN PLAN, que predice el índice, con la latencia real; diagnosticar muestra con DISPLAY_CURSOR el filter(TO_NUMBER(CODIGO_POSTAL)=:B1) y el TABLE ACCESS FULL; solucionar lanza la versión V2 con la variable VARCHAR2 y recupera el INDEX RANGE SCAN; validar compara lecturas y p95. C08: provocar ejecuta un listado con ciudad y comunidad; entender compara los 56 clientes reales con la estimación independiente (2,9); diagnosticar usa GATHER_PLAN_STATISTICS y E-Rows x Starts frente a A-Rows para ver que la primera línea que se desvía es la de CLIENTE; solucionar crea el grupo de columnas con DBMS_STATS.CREATE_EXTENDED_STATS sobre (CIUDAD, COMUNIDAD) y recoge estadísticas con no_invalidate => FALSE; validar comprueba que la estimación pasa de 3 a 50.
 - **Evidencia de ejecución (archivo de docs/bitacora/lab7/evidencia con mi cabecera):** docs/bitacora/lab7/evidencia/casos/20261126T144000Z_C07_provocar.txt, 20261126T144002Z_C07_entender.txt, 20261126T144004Z_C07_diagnosticar.txt, 20261126T144006Z_C07_solucionar.txt, 20261126T144008Z_C07_validar.txt, 20261126T144009Z_C07_observar.txt, 20261126T144012Z_C08_provocar.txt, 20261126T144014Z_C08_entender.txt, 20261126T144016Z_C08_diagnosticar.txt, 20261126T144018Z_C08_solucionar.txt, 20261126T144020Z_C08_validar.txt y 20261126T144021Z_C08_observar.txt
+
+## Entrada 5
+- **Herramienta:** Perplexity (chat de IA, sin agente; los comandos y los commits los ejecuto yo desde mi terminal)
+- **Prompt (literal, copiado tal cual):**
+```text
+cd ~/oracle-database-lab
+source ~/.bashrc
+t6 fra
+for c in C12 C13 C14; do for f in provocar entender diagnosticar solucionar validar observar; do caso $c $f; done; done
+ls -lt docs/bitacora/lab7/evidencia/casos | head -20
+```
+(Es el comienzo de mi mensaje; después pegué la salida completa de los comandos.)
+- **Código recibido (el fragmento, o la ruta del archivo donde está):**
+```bash
+for c in C12 C13 C14; do for f in provocar entender diagnosticar solucionar validar observar; do caso $c $f; done; done
+```
+Además, el texto de las respuestas de C12, C13 y C14 en docs/bitacora/lab7-respuestas.md (apartados Parte E · C12, C13 y C14), redactado por la IA a partir de mis salidas reales.
+- **Dónde lo usé (parte, script o pregunta):** Parte E, casos C12, C13 y C14, y las seis preguntas de esos casos en lab7-respuestas.md.
+- **Propósito (para qué lo necesitaba):** Ejecutar las seis fases de C12, C13 y C14 en mi contenedor y redactar las respuestas con mis cifras.
+- **Qué hace (con mis palabras; línea a línea si es SQL corto):** C12: carga 200 000 filas en CARRITO sin recoger estadísticas (el optimizador cree que tiene 100), diagnostica el NESTED LOOPS de 212 169 lecturas con el plan real y STALE_STATS, y lo arregla recogiendo solo CARRITO con DBMS_STATS.GATHER_TABLE_STATS(no_invalidate => FALSE), que pasa a HASH JOIN con 5 907 lecturas. C13: pasa 135 277 pedidos a estado E; PUBLISH = FALSE deja las estadísticas nuevas como pendientes, se prueban en mi sesión con optimizer_use_pending_statistics = TRUE, se publican con PUBLISH_PENDING_STATS, se restauran con RESTORE_TABLE_STATS desde el historial y se bloquean con LOCK_TABLE_STATS (la recogida posterior da ORA-20005). C14: crea el índice (estado, canal, fecha_pedido) INVISIBLE ONLINE, lo prueba solo en mi sesión con optimizer_use_invisible_indexes = TRUE, lo publica con ALTER INDEX VISIBLE y mide el redo con el índice invisible y visible.
+- **Evidencia de ejecución (archivo de docs/bitacora/lab7/evidencia con mi cabecera):** docs/bitacora/lab7/evidencia/casos/20261126T144331Z_C12_provocar.txt, 20261126T144333Z_C12_entender.txt, 20261126T144335Z_C12_diagnosticar.txt, 20261126T144338Z_C12_solucionar.txt, 20261126T144340Z_C12_validar.txt, 20261126T144342Z_C12_observar.txt, 20261126T144350Z_C13_provocar.txt, 20261126T144352Z_C13_entender.txt, 20261126T144356Z_C13_diagnosticar.txt, 20261126T144407Z_C13_solucionar.txt, 20261126T144409Z_C13_validar.txt, 20261126T144447Z_C13_observar.txt, 20261126T144457Z_C14_provocar.txt, 20261126T144500Z_C14_entender.txt, 20261126T144502Z_C14_diagnosticar.txt, 20261126T144518Z_C14_solucionar.txt, 20261126T144520Z_C14_validar.txt y 20261126T144544Z_C14_observar.txt
