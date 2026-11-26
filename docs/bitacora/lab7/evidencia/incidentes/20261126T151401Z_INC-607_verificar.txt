@@ -1,0 +1,7 @@
+== EVIDENCIA alumno=E048 hora=2026-11-26T15:14:01Z origen=t6/INC-607_verificar
+== EVIDENCIA contenedor=b5d714c0e880 dbid=1509902213 arranque=2026-11-26T14:36:07 scn=10540503
+== INC-607 · verificar · alumno E048 · semilla 48
+OK    Incidente INC-607 roto para E048 (semilla 48) el 2026-11-26 15:10 · línea base FIXED de recorrido completo; cliente de prueba 5656
+OK    No queda ninguna línea base FIXED activa para el historial
+OK    El historial del cliente 5656 usa un índice por ID_CLIENTE
+OK    Lecturas por historial (media de 3, incluye el primer análisis; el recorrido completo pasa de 5 000): 103
