@@ -48,11 +48,23 @@ CÓMO SE RELLENA
 
 ## Parte D · C07 · EXPLAIN PLAN frente al plan real
 1. Copia el predicado que delata el problema en el plan real y explica de dónde sale.
+   **Respuesta:** En el plan real (DISPLAY_CURSOR) el predicado es filter(TO_NUMBER("CODIGO_POSTAL")=:B1) sobre un TABLE ACCESS FULL de PEDIDO (plan 2571571058, coste 1449).
+   Sale de que la aplicación pasa la variable como NUMBER (el bind visto fue :B1 (NUMBER): 30038) contra la columna CODIGO_POSTAL, que es VARCHAR2: Oracle convierte la COLUMNA con TO_NUMBER para compararla y el índice IX_T6_PED_CP ya no se puede usar como clave de búsqueda.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T144004Z_C07_diagnosticar.txt.
 2. Lecturas y p95 de V1 y V2. ¿Por qué EXPLAIN PLAN no lo vio?
+   **Respuesta:** V1 (variable NUMBER) hacía 5 234 lecturas por búsqueda y una p95 de 121,5 ms (p50 70,5 ms, 40 búsquedas). V2 (variable VARCHAR2, un solo cambio en la aplicación) hace 95 lecturas y p95 de 4,1 ms, con INDEX RANGE SCAN en IX_T6_PED_CP.
+   EXPLAIN PLAN no lo detectó porque no ejecuta la sentencia ni conoce el tipo ni el valor de la variable: trató :CP como texto y predijo el índice (plan 2982358210, coste 94), que es el plan que luego tuvo V2 y no V1.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T144002Z_C07_entender.txt, 20261126T144008Z_C07_validar.txt y 20261126T144006Z_C07_solucionar.txt.
 
 ## Parte D · C08 · E-Rows frente a A-Rows
 1. Estimación y filas reales antes y después del grupo de columnas. ¿En qué línea del plan se separan por primera vez?
+   **Respuesta:** Antes, el optimizador estimaba 3 clientes (E-Rows 3) y había 56 (A-Rows 56). Después de crear el grupo de columnas (CIUDAD, COMUNIDAD) y recoger estadísticas, la estimación es 50 frente a 56 reales.
+   Las dos cifras se separan por primera vez en la línea 3 del plan, TABLE ACCESS BY INDEX ROWID BATCHED de CLIENTE (filtro de COMUNIDAD sobre el acceso por CIUDAD); todo lo que está encima hereda el error (E-Rows 28 y 30 frente a 599 filas reales).
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T144016Z_C08_diagnosticar.txt, 20261126T144018Z_C08_solucionar.txt y 20261126T144020Z_C08_validar.txt.
 2. ¿Por qué el optimizador multiplicaba mal las dos selectividades?
+   **Respuesta:** Porque supone que las columnas son independientes y multiplica sus selectividades: 100 000 filas x 1/2 000 (CIUDAD) x 1/17 (COMUNIDAD) da unas 2,9 filas. Pero están correlacionadas: cada ciudad pertenece a una sola comunidad (el máximo de comunidades por ciudad es 1), así que la segunda condición apenas filtra y hay 56 clientes.
+   El grupo de columnas crea una columna virtual oculta (SYS_STU...) que cuenta las combinaciones distintas (2 000), con lo que la estimación pasa a 100 000 / 2 000 = 50.
+   Evidencia: docs/bitacora/lab7/evidencia/casos/20261126T144014Z_C08_entender.txt y 20261126T144021Z_C08_observar.txt.
 
 ## Parte E · C12 · Estadísticas obsoletas
 1. Filas según las estadísticas y reales; método de unión y lecturas antes y después.

@@ -1,0 +1,9 @@
+== EVIDENCIA alumno=E048 hora=2026-11-26T14:39:51Z origen=t6/fra
+== EVIDENCIA contenedor=b5d714c0e880 dbid=1509902213 arranque=2026-11-26T14:36:07 scn=10520677
+FILE_TYPE		PCT_USADO   ARCHIVOS
+---------------------- ---------- ----------
+ARCHIVED LOG		    16.41	   9
+BACKUP PIECE		     2.25	   5
+ LIMITE_MB   USADO_MB	     PCT
+---------- ---------- ----------
+      4096	  764	    18.7
